@@ -1,0 +1,64 @@
+{
+  "onboardingSlides": [
+    {
+      "id": "1",
+      "title": "Pool Funds with Friends & Family",
+      "description": "Need to save for a group trip, a joint investment, or a shared expense? Contribiia Wallet makes it easy to pool funds securely. Set goals, track contributions, and reach financial milestones together.",
+      "image": "pool-funds"
+    },
+    {
+      "id": "2",
+      "title": "Stay on Top of Your Credit Score!",
+      "description": "Monitor, understand, and improve your credit score effortlessly. Get real-time insights, smart recommendations, and take control of your financial future.",
+      "image": "credit-score"
+    },
+    {
+      "id": "3",
+      "title": "Your Security, Our Priority",
+      "description": "Sleep soundly knowing your finances are protected by state-of-the-art security. Contribiia Wallet is a digital fortress, safeguarding your assets with cutting-edge encryption. Trust, transact, and thrive worry-free.",
+      "image": "security"
+    },
+    {
+      "id": "4",
+      "title": "Meet Contribiia Wallet – Your Financial Hub!",
+      "description": "Say goodbye to scattered accounts and hello to seamless money management. Contribiia Wallet brings all your financial assets together in one secure, easy-to-use space, your all-in-one financial companion.",
+      "image": "wallet"
+    }
+  ],
+  "users": [
+    {
+      "id": "u1",
+      "name": "Jamie Taiwo",
+      "email": "saver@contribiia.com",
+      "password": "password123",
+      "username": "JamieTaiwo",
+      "phone": "+1 5555 555 555"
+    }
+  ],
+  "banks": [
+    { "id": "bmo", "name": "BMO", "logo": "bank" },
+    { "id": "scotiabank", "name": "Scotiabank", "logo": "bank" },
+    { "id": "td", "name": "TD Bank", "logo": "bank" },
+    { "id": "cibc", "name": "CIBC", "logo": "bank" },
+    { "id": "cwb", "name": "Canadian Western Bank", "logo": "bank" },
+    { "id": "hsbc", "name": "HSBC Bank", "logo": "bank" }
+  ],
+  "provinces": [
+    "Alberta", "British Columbia", "Manitoba", "New Brunswick",
+    "Newfoundland and Labrador", "Nova Scotia", "Ontario",
+    "Prince Edward Island", "Quebec", "Saskatchewan",
+    "Northwest Territories", "Nunavut", "Yukon"
+  ],
+  "termsAndConditions": "By accessing or otherwise using this app, you agree to be bound contractually by these Terms Of Use.\n\nTerms Of Use\nFiller text here, that describes the section outlined above. Legal text. Filler text here, that describes the section outlined above. Legal text. Filler text here, that describes the section outlined above. Legal text.\n\nUse License\nFiller text here, that describes the section outlined above. Legal text.\n\nSecurity\nFiller text here, that describes the section outlined above. Legal text. Filler text here, that describes the section outlined above.",
+  "governmentIds": [
+    { "id": "passport", "label": "Passport" },
+    { "id": "drivers_license", "label": "Driver's license" },
+    { "id": "health_card", "label": "Provincial health card" }
+  ],
+  "officialDocuments": [
+    { "id": "utility_bill", "label": "Public utility bill" },
+    { "id": "bank_statement", "label": "Bank account statement" },
+    { "id": "statement_of_benefits", "label": "Statement of benefits" },
+    { "id": "tax_assessment", "label": "Tax assessment" }
+  ]
+}
