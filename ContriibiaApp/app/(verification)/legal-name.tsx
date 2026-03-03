@@ -1,16 +1,163 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import ScreenHeader from '../../components/ScreenHeader';
 import { Colors } from '../../constants/Colors';
+import { useUser } from '../../context/UserContext';
 
 const YEARS = Array.from({ length: 100 }, (_, i) => String(new Date().getFullYear() - i));
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = [
+  { label: '01 - January', value: '01' },
+  { label: '02 - February', value: '02' },
+  { label: '03 - March', value: '03' },
+  { label: '04 - April', value: '04' },
+  { label: '05 - May', value: '05' },
+  { label: '06 - June', value: '06' },
+  { label: '07 - July', value: '07' },
+  { label: '08 - August', value: '08' },
+  { label: '09 - September', value: '09' },
+  { label: '10 - October', value: '10' },
+  { label: '11 - November', value: '11' },
+  { label: '12 - December', value: '12' },
+];
 const DAYS = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
 const GENDERS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
+
+function ComboDropdown({
+  label,
+  value,
+  placeholder,
+  items,
+  onSelect,
+  onChangeText,
+  keyboardType,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  items: string[];
+  onSelect: (val: string) => void;
+  onChangeText: (val: string) => void;
+  keyboardType?: 'default' | 'numeric';
+}) {
+  const [open, setOpen] = useState(false);
+
+  const filtered = value
+    ? items.filter((i) => i.startsWith(value))
+    : items;
+
+  return (
+    <View style={styles.comboContainer}>
+      <Text style={styles.dobLabel}>{label}</Text>
+      <View style={styles.comboInputRow}>
+        <TextInput
+          style={styles.comboInput}
+          value={value}
+          placeholder={placeholder}
+          placeholderTextColor={Colors.textPlaceholder}
+          keyboardType={keyboardType ?? 'default'}
+          onChangeText={(text) => {
+            onChangeText(text);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+        />
+        <TouchableOpacity onPress={() => setOpen((v) => !v)} style={styles.comboArrowBtn}>
+          <Text style={styles.dropdownArrow}>{open ? '▴' : '▾'}</Text>
+        </TouchableOpacity>
+      </View>
+      {open && filtered.length > 0 && (
+        <View style={styles.comboList}>
+          <FlatList
+            data={filtered.slice(0, 6)}
+            keyExtractor={(item) => item}
+            keyboardShouldPersistTaps="always"
+            nestedScrollEnabled
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.comboItem}
+                onPress={() => {
+                  onSelect(item);
+                  setOpen(false);
+                }}
+              >
+                <Text style={styles.comboItemText}>{item}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
+
+function MonthDropdown({
+  value,
+  onSelect,
+}: {
+  value: string;
+  onSelect: (val: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(value);
+
+  const filtered = query
+    ? MONTHS.filter((m) => m.label.toLowerCase().includes(query.toLowerCase()) || m.value.startsWith(query))
+    : MONTHS;
+
+  const displayLabel = MONTHS.find((m) => m.value === value)?.label ?? value;
+
+  return (
+    <View style={styles.comboContainer}>
+      <Text style={styles.dobLabel}>Month</Text>
+      <View style={styles.comboInputRow}>
+        <TextInput
+          style={styles.comboInput}
+          value={open ? query : displayLabel}
+          placeholder="MM"
+          placeholderTextColor={Colors.textPlaceholder}
+          keyboardType="default"
+          onChangeText={(text) => {
+            setQuery(text);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            setQuery('');
+            setOpen(true);
+          }}
+        />
+        <TouchableOpacity onPress={() => setOpen((v) => !v)} style={styles.comboArrowBtn}>
+          <Text style={styles.dropdownArrow}>{open ? '▴' : '▾'}</Text>
+        </TouchableOpacity>
+      </View>
+      {open && filtered.length > 0 && (
+        <View style={styles.comboList}>
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item.value}
+            keyboardShouldPersistTaps="always"
+            nestedScrollEnabled
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.comboItem}
+                onPress={() => {
+                  onSelect(item.value);
+                  setQuery(item.label);
+                  setOpen(false);
+                }}
+              >
+                <Text style={styles.comboItemText}>{item.label}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
 
 function DropdownButton({
   value,
@@ -32,14 +179,14 @@ function DropdownButton({
 }
 
 export default function LegalNameScreen() {
-  const [legalName, setLegalName] = useState('Jamie Taiwo');
+  const { user } = useUser();
+  const [legalName, setLegalName] = useState(user.name || 'Jamie Taiwo');
   const [differentName, setDifferentName] = useState(false);
   const [actualName, setActualName] = useState('');
   const [year, setYear] = useState('');
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
   const [gender, setGender] = useState('');
-  const [showYearPicker, setShowYearPicker] = useState(false);
 
   const handleContinue = () => {
     if ((!differentName && !legalName) || (differentName && !actualName)) {
@@ -92,48 +239,25 @@ export default function LegalNameScreen() {
 
         <Text style={styles.sectionTitle}>Date of birth</Text>
         <View style={styles.dobRow}>
-          <View style={styles.dobField}>
-            <Text style={styles.dobLabel}>Year</Text>
-            <DropdownButton
-              value={year}
-              placeholder="YYYY"
-              onPress={() => setShowYearPicker(true)}
-            />
-          </View>
-          <View style={styles.dobField}>
-            <Text style={styles.dobLabel}>Month</Text>
-            <DropdownButton
-              value={month}
-              placeholder="MM"
-              onPress={() =>
-                Alert.alert(
-                  'Month',
-                  '',
-                  MONTHS.map((m, i) => ({
-                    text: m,
-                    onPress: () => setMonth(String(i + 1).padStart(2, '0')),
-                  }))
-                )
-              }
-            />
-          </View>
-          <View style={styles.dobField}>
-            <Text style={styles.dobLabel}>Day</Text>
-            <DropdownButton
-              value={day}
-              placeholder="DD"
-              onPress={() =>
-                Alert.alert(
-                  'Day',
-                  '',
-                  DAYS.slice(0, 15).map((d) => ({
-                    text: d,
-                    onPress: () => setDay(d),
-                  }))
-                )
-              }
-            />
-          </View>
+          <ComboDropdown
+            label="Year"
+            value={year}
+            placeholder="YYYY"
+            items={YEARS}
+            onSelect={setYear}
+            onChangeText={setYear}
+            keyboardType="numeric"
+          />
+          <MonthDropdown value={month} onSelect={setMonth} />
+          <ComboDropdown
+            label="Day"
+            value={day}
+            placeholder="DD"
+            items={DAYS}
+            onSelect={setDay}
+            onChangeText={setDay}
+            keyboardType="numeric"
+          />
         </View>
 
         <Text style={styles.sectionTitle}>Gender</Text>
@@ -172,9 +296,27 @@ const styles = StyleSheet.create({
   checkboxChecked: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   checkmark: { color: Colors.white, fontSize: 12, fontWeight: '700' },
   checkLabel: { flex: 1, fontSize: 14, color: Colors.textMid },
-  dobRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  dobRow: { flexDirection: 'row', gap: 10, marginBottom: 20, alignItems: 'flex-start' },
   dobField: { flex: 1 },
   dobLabel: { fontSize: 12, color: Colors.textMid, marginBottom: 6, fontWeight: '500' },
+  comboContainer: { flex: 1, position: 'relative', zIndex: 10 },
+  comboInputRow: {
+    flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 6, backgroundColor: Colors.white, overflow: 'hidden',
+  },
+  comboInput: {
+    flex: 1, fontSize: 14, color: Colors.textDark,
+    paddingHorizontal: 10, paddingVertical: 12,
+  },
+  comboArrowBtn: { paddingHorizontal: 10, paddingVertical: 12 },
+  comboList: {
+    position: 'absolute', top: '100%', left: 0, right: 0,
+    backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 6, zIndex: 999, maxHeight: 180,
+    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, elevation: 4,
+  },
+  comboItem: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  comboItemText: { fontSize: 13, color: Colors.textDark },
   dropdown: {
     flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
     borderRadius: 6, paddingHorizontal: 10, paddingVertical: 12, backgroundColor: Colors.white,

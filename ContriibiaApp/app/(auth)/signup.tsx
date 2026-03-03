@@ -6,6 +6,7 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
+import { useUser } from '../../context/UserContext';
 
 export default function SignupScreen() {
   const [form, setForm] = useState({
@@ -18,6 +19,7 @@ export default function SignupScreen() {
   });
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { setUser } = useUser();
 
   const set = (key: keyof typeof form) => (val: string) =>
     setForm((prev) => ({ ...prev, [key]: val }));
@@ -40,6 +42,7 @@ export default function SignupScreen() {
     // Mock registration
     setTimeout(() => {
       setLoading(false);
+      setUser({ name: form.name, username: form.username, email: form.email, phone: form.phone });
       router.replace('/(verification)/setup-overview');
     }, 800);
   };
