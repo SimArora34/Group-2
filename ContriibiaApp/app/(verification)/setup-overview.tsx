@@ -17,21 +17,29 @@ export default function SetupOverviewScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.body}>
         <Logo size="large" showTagline />
+
         <Text style={styles.heading}>
           A couple of steps and your Contribiia savings journey can begin.
         </Text>
 
         <View style={styles.stepsContainer}>
           {STEPS.map((step) => (
-            <View key={step.num} style={[styles.stepRow, step.active && styles.stepRowActive]}>
-              <View style={[styles.numCircle, step.active && styles.numCircleActive]}>
+            <View
+              key={step.num}
+              style={[styles.stepRow, step.active && styles.stepRowActive]}
+            >
+              <View
+                style={[styles.numCircle, step.active && styles.numCircleActive]}
+              >
                 <Text style={[styles.numText, step.active && styles.numTextActive]}>
                   {step.num}
                 </Text>
               </View>
+
               <Text style={[styles.stepLabel, step.active && styles.stepLabelActive]}>
                 {step.label}
               </Text>
+
               {step.active && <Text style={styles.stepArrow}>›</Text>}
             </View>
           ))}
@@ -39,8 +47,15 @@ export default function SetupOverviewScreen() {
       </View>
 
       <View style={styles.actions}>
-        <Button label="Start Setup" onPress={() => router.push('/(verification)/identity-intro')} />
-        <Button label="Cancel" variant="outline" onPress={() => router.replace('/(auth)')} />
+        <Button
+          label="Start Setup"
+          onPress={() => router.push('/(verification)/identity-intro')}
+        />
+        <Button
+          label="Cancel"
+          variant="outline"
+          onPress={() => router.replace('/(auth)')}
+        />
       </View>
     </SafeAreaView>
   );
@@ -48,7 +63,13 @@ export default function SetupOverviewScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
-  body: { flex: 1, padding: 32, alignItems: 'center', justifyContent: 'center', gap: 28 },
+  body: {
+    flex: 1,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 28,
+  },
   heading: {
     fontSize: 20,
     fontWeight: '700',

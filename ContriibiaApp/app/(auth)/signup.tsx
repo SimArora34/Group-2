@@ -6,6 +6,7 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
+import { signUp } from '@/src/services/authService';
 
 export default function SignupScreen() {
   const [form, setForm] = useState({
@@ -22,26 +23,37 @@ export default function SignupScreen() {
   const set = (key: keyof typeof form) => (val: string) =>
     setForm((prev) => ({ ...prev, [key]: val }));
 
-  const handleCreate = () => {
-    const { name, username, email, phone, password, confirmPassword } = form;
-    if (!name || !username || !email || !phone || !password || !confirmPassword) {
+  const handleCreate = async () => {
+    const { name, email, password, confirmPassword } = form;
+
+    if (!form.name || !form.username || !email || !form.phone || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
+
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
+
     if (!agreed) {
       Alert.alert('Error', 'Please agree to the Terms & Conditions');
       return;
     }
+
     setLoading(true);
-    // Mock registration
-    setTimeout(() => {
-      setLoading(false);
-      router.replace('/(verification)/setup-overview');
-    }, 800);
+
+    const result = await signUp(email.trim(), password, name.trim());
+
+    setLoading(false);
+
+    if (!result.success) {
+      Alert.alert('Signup Failed', result.error || 'Something went wrong');
+      return;
+    }
+
+    Alert.alert('Success', 'Account created successfully');
+    router.replace('/(verification)/setup-overview');
   };
 
   return (
@@ -104,7 +116,13 @@ export default function SignupScreen() {
           </Text>
         </View>
 
-        <Button label="Create Account" onPress={handleCreate} loading={loading} disabled={!agreed} style={styles.ctaButton} />
+        <Button
+          label="Create Account"
+          onPress={handleCreate}
+          loading={loading}
+          disabled={!agreed}
+          style={styles.ctaButton}
+        />
 
         <Text style={styles.bottomText}>
           Already have an account?{' '}

@@ -17,15 +17,19 @@ export default function SetPasswordScreen() {
       Alert.alert('Error', 'Please fill in both fields');
       return;
     }
+
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
+
     if (password.length < 8) {
       Alert.alert('Error', 'Password must be at least 8 characters');
       return;
     }
+
     setLoading(true);
+
     setTimeout(() => {
       setLoading(false);
       router.replace('/(auth)/password-success');
@@ -70,7 +74,19 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   scroll: { padding: 24, flexGrow: 1 },
   logoRow: { alignItems: 'center', marginBottom: 32, marginTop: 8 },
-  heading: { fontSize: 22, fontWeight: '700', color: Colors.textDark, marginBottom: 8, textAlign: 'center' },
-  subheading: { fontSize: 14, color: Colors.textMid, textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+  heading: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.textDark,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subheading: {
+    fontSize: 14,
+    color: Colors.textMid,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
+  },
   spacer: { flex: 1, minHeight: 40 },
 });

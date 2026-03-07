@@ -6,31 +6,31 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
-import mockData from '../../data/mockData.json';
+import { signIn } from '@/src/services/authService';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
+
     setLoading(true);
-    // Mock authentication against JSON data
-    setTimeout(() => {
-      const user = mockData.users.find(
-        (u) => u.email === email && u.password === password
-      );
-      setLoading(false);
-      if (user) {
-        router.replace('/(tabs)');
-      } else {
-        Alert.alert('Login Failed', 'Invalid email or password');
-      }
-    }, 800);
+
+    const result = await signIn(email.trim(), password);
+
+    setLoading(false);
+
+    if (!result.success) {
+      Alert.alert('Login Failed', result.error || 'Invalid email or password');
+      return;
+    }
+
+    router.replace('/(tabs)');
   };
 
   return (

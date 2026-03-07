@@ -9,12 +9,16 @@ import mockData from '../../data/mockData.json';
 
 export default function BankSelectScreen() {
   const handleSelect = (bankId: string, bankName: string) => {
-    router.push({ pathname: '/(verification)/bank-2fa', params: { bankId, bankName } });
+    router.push({
+      pathname: '/(verification)/bank-2fa',
+      params: { bankId, bankName },
+    });
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader title="Identity Verification" />
+
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.heading}>Secure portal link</Text>
         <Text style={styles.subheading}>
@@ -27,9 +31,10 @@ export default function BankSelectScreen() {
             style={styles.bankRow}
             onPress={() => handleSelect(bank.id, bank.name)}
           >
-            {/* Bank logo placeholder */}
             <View style={styles.bankLogo}>
-              <Text style={styles.bankLogoText}>{bank.name.slice(0, 2).toUpperCase()}</Text>
+              <Text style={styles.bankLogoText}>
+                {bank.name.slice(0, 2).toUpperCase()}
+              </Text>
             </View>
             <Text style={styles.bankName}>{bank.name}</Text>
             <Text style={styles.bankArrow}>›</Text>
@@ -47,6 +52,7 @@ export default function BankSelectScreen() {
           <Text style={styles.bankArrow}>›</Text>
         </TouchableOpacity>
       </ScrollView>
+
       <View style={styles.actions}>
         <Button label="Back" variant="outline" onPress={() => router.back()} />
       </View>
@@ -60,14 +66,24 @@ const styles = StyleSheet.create({
   heading: { fontSize: 20, fontWeight: '700', color: Colors.textDark, marginBottom: 8 },
   subheading: { fontSize: 13, color: Colors.textMid, lineHeight: 20, marginBottom: 20 },
   bankRow: {
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.border, borderRadius: 8,
-    padding: 14, marginBottom: 10, gap: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    padding: 14,
+    marginBottom: 10,
+    gap: 12,
   },
   bankRowLast: { borderStyle: 'dashed' },
   bankLogo: {
-    width: 40, height: 40, borderRadius: 6,
-    backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   bankLogoGray: { backgroundColor: Colors.disabled },
   bankLogoText: { color: Colors.white, fontWeight: '800', fontSize: 14 },

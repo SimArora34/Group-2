@@ -16,9 +16,11 @@ export default function VerifyCodeScreen() {
 
   const handleChange = (val: string, idx: number) => {
     if (!/^\d*$/.test(val)) return;
+
     const newCode = [...code];
     newCode[idx] = val.slice(-1);
     setCode(newCode);
+
     if (val && idx < CODE_LENGTH - 1) {
       inputs.current[idx + 1]?.focus();
     }
@@ -26,14 +28,17 @@ export default function VerifyCodeScreen() {
 
   const handleVerify = () => {
     const entered = code.join('');
+
     if (entered.length < CODE_LENGTH) {
       Alert.alert('Error', 'Please enter the full 5-digit code');
       return;
     }
+
     if (entered !== MOCK_CODE) {
       Alert.alert('Invalid Code', `The code is incorrect. (Hint: use ${MOCK_CODE})`);
       return;
     }
+
     router.push('/(auth)/set-password');
   };
 
@@ -46,7 +51,8 @@ export default function VerifyCodeScreen() {
 
         <Text style={styles.heading}>Check your email</Text>
         <Text style={styles.subheading}>
-          We sent a reset link to <Text style={styles.emailBold}>{email || 'your email'}</Text>.{'\n'}
+          We sent a reset link to <Text style={styles.emailBold}>{email || 'your email'}</Text>.
+          {'\n'}
           Enter the 5 digit code mentioned in the email.
         </Text>
 
@@ -54,7 +60,9 @@ export default function VerifyCodeScreen() {
           {code.map((digit, idx) => (
             <TextInput
               key={idx}
-              ref={(r) => { inputs.current[idx] = r; }}
+              ref={(r) => {
+                inputs.current[idx] = r;
+              }}
               style={styles.codeBox}
               value={digit}
               onChangeText={(v) => handleChange(v, idx)}
@@ -76,8 +84,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   scroll: { padding: 24, flexGrow: 1 },
   logoRow: { alignItems: 'center', marginBottom: 32, marginTop: 8 },
-  heading: { fontSize: 22, fontWeight: '700', color: Colors.textDark, marginBottom: 8, textAlign: 'center' },
-  subheading: { fontSize: 14, color: Colors.textMid, textAlign: 'center', marginBottom: 28, lineHeight: 20 },
+  heading: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.textDark,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subheading: {
+    fontSize: 14,
+    color: Colors.textMid,
+    textAlign: 'center',
+    marginBottom: 28,
+    lineHeight: 20,
+  },
   emailBold: { fontWeight: '700', color: Colors.textDark },
   codeRow: { flexDirection: 'row', justifyContent: 'center', gap: 12 },
   codeBox: {

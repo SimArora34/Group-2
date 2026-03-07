@@ -9,13 +9,13 @@ import { Colors } from '../../constants/Colors';
 export default function AuthIndex() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Gradient background placeholder */}
       <View style={styles.heroArea}>
         <View style={styles.gradientPlaceholder}>
           <View style={styles.wave1} />
           <View style={styles.wave2} />
           <View style={styles.wave3} />
         </View>
+
         <View style={styles.logoSection}>
           <Logo size="large" showTagline />
           <Text style={styles.taglineText}>Save together, achieve more!</Text>

@@ -18,7 +18,9 @@ export default function CompleteScreen() {
       <View style={styles.body}>
         <Logo size="large" showTagline />
 
-        <Text style={styles.heading}>You are ready to join a savings club!</Text>
+        <Text style={styles.heading}>
+          You are ready to join a savings club!
+        </Text>
 
         <View style={styles.stepsContainer}>
           {STEPS.map((step) => (
@@ -31,6 +33,7 @@ export default function CompleteScreen() {
           ))}
         </View>
       </View>
+
       <View style={styles.actions}>
         <Button label="Start Saving" onPress={() => router.replace('/(tabs)')} />
       </View>
@@ -40,23 +43,46 @@ export default function CompleteScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
-  body: { flex: 1, padding: 32, alignItems: 'center', justifyContent: 'center', gap: 28 },
+  body: {
+    flex: 1,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 28,
+  },
   heading: {
-    fontSize: 22, fontWeight: '700', color: Colors.textDark,
-    textAlign: 'center', lineHeight: 30,
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.textDark,
+    textAlign: 'center',
+    lineHeight: 30,
   },
   stepsContainer: { width: '100%', gap: 10 },
   stepRow: {
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.primary,
-    borderRadius: 8, padding: 16, gap: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: 8,
+    padding: 16,
+    gap: 14,
     backgroundColor: Colors.primaryLight,
   },
   numCircle: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   checkText: { color: Colors.white, fontWeight: '700', fontSize: 16 },
-  stepLabel: { flex: 1, fontSize: 15, color: Colors.textDark, fontWeight: '600' },
+  stepLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: Colors.textDark,
+    fontWeight: '600',
+  },
   actions: { padding: 24 },
 });

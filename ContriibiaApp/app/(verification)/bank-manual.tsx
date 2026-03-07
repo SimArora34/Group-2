@@ -23,25 +23,33 @@ export default function BankManualScreen() {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
+
     if (accountNumber !== confirmAccount) {
       Alert.alert('Error', 'Account numbers do not match');
       return;
     }
+
     setLoading(true);
+
     setTimeout(() => {
       setLoading(false);
-      router.push('/(verification)/bank-success');
+      router.push({
+        pathname: '/(verification)/bank-success',
+        params: { bankName },
+      });
     }, 800);
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader title="Identity Verification" />
+
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Text style={styles.heading}>Bank account details</Text>
-        <Text style={styles.subheading}>Please enter the details of your bank account.</Text>
+        <Text style={styles.subheading}>
+          Please enter the details of your bank account.
+        </Text>
 
-        {/* Bank name dropdown */}
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>Name of bank</Text>
           <TouchableOpacity
@@ -50,7 +58,10 @@ export default function BankManualScreen() {
               Alert.alert(
                 'Select bank',
                 '',
-                mockData.banks.map((b) => ({ text: b.name, onPress: () => setBankName(b.name) }))
+                mockData.banks.map((b) => ({
+                  text: b.name,
+                  onPress: () => setBankName(b.name),
+                }))
               )
             }
           >
@@ -61,7 +72,6 @@ export default function BankManualScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Account type dropdown */}
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>Account type</Text>
           <TouchableOpacity
@@ -70,12 +80,15 @@ export default function BankManualScreen() {
               Alert.alert(
                 'Account type',
                 '',
-                ACCOUNT_TYPES.map((t) => ({ text: t, onPress: () => setAccountType(t) }))
+                ACCOUNT_TYPES.map((t) => ({
+                  text: t,
+                  onPress: () => setAccountType(t),
+                }))
               )
             }
           >
             <Text style={accountType ? styles.dropdownValue : styles.dropdownPlaceholder}>
-              {accountType || 'Text example'}
+              {accountType || 'Select account type'}
             </Text>
             <Text style={styles.dropdownArrow}>▾</Text>
           </TouchableOpacity>
@@ -103,6 +116,7 @@ export default function BankManualScreen() {
           keyboardType="numeric"
         />
       </ScrollView>
+
       <View style={styles.actions}>
         <Button label="Link bank account" onPress={handleLink} loading={loading} />
         <Button label="Back" variant="ghost" onPress={() => router.back()} />
@@ -119,8 +133,14 @@ const styles = StyleSheet.create({
   field: { marginBottom: 14 },
   fieldLabel: { fontSize: 14, color: Colors.textDark, marginBottom: 6, fontWeight: '500' },
   dropdown: {
-    flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 6, paddingHorizontal: 12, height: 48, backgroundColor: Colors.white,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    height: 48,
+    backgroundColor: Colors.white,
   },
   dropdownValue: { flex: 1, fontSize: 15, color: Colors.textDark },
   dropdownPlaceholder: { flex: 1, fontSize: 15, color: Colors.textPlaceholder },

@@ -16,8 +16,9 @@ export default function ForgotPasswordScreen() {
       Alert.alert('Error', 'Please enter your email address');
       return;
     }
+
     setLoading(true);
-    // Mock: send reset email
+
     setTimeout(() => {
       setLoading(false);
       router.push({ pathname: '/(auth)/verify-code', params: { email } });
@@ -58,12 +59,44 @@ export default function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.white },
-  scroll: { padding: 24, flexGrow: 1 },
-  logoRow: { alignItems: 'center', marginBottom: 32, marginTop: 8 },
-  heading: { fontSize: 22, fontWeight: '700', color: Colors.textDark, marginBottom: 6, textAlign: 'center' },
-  subheading: { fontSize: 14, color: Colors.textMid, textAlign: 'center', marginBottom: 24 },
-  spacer: { flex: 1, minHeight: 32 },
-  bottomText: { textAlign: 'center', color: Colors.textMid, fontSize: 14, marginTop: 16 },
-  link: { color: Colors.primary, fontWeight: '600' },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.white,
+  },
+  scroll: {
+    padding: 24,
+    flexGrow: 1,
+  },
+  logoRow: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 8,
+  },
+  heading: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.textDark,
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  subheading: {
+    fontSize: 14,
+    color: Colors.textMid,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  spacer: {
+    flex: 1,
+    minHeight: 32,
+  },
+  bottomText: {
+    textAlign: 'center',
+    color: Colors.textMid,
+    fontSize: 14,
+    marginTop: 16,
+  },
+  link: {
+    color: Colors.primary,
+    fontWeight: '600',
+  },
 });

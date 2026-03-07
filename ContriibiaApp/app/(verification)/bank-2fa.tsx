@@ -16,9 +16,11 @@ export default function Bank2FAScreen() {
 
   const handleChange = (val: string, idx: number) => {
     if (!/^\d*$/.test(val)) return;
+
     const newCode = [...code];
     newCode[idx] = val.slice(-1);
     setCode(newCode);
+
     if (val && idx < CODE_LENGTH - 1) {
       inputs.current[idx + 1]?.focus();
     }
@@ -26,25 +28,33 @@ export default function Bank2FAScreen() {
 
   const handleContinue = () => {
     const entered = code.join('');
+
     if (entered.length < CODE_LENGTH) {
       Alert.alert('Error', 'Please enter the complete code');
       return;
     }
+
     if (entered !== MOCK_CODE) {
       Alert.alert('Invalid Code', `Incorrect code. (Hint: use ${MOCK_CODE})`);
       return;
     }
-    router.push({ pathname: '/(verification)/bank-account-type', params: { bankName } });
+
+    router.push({
+      pathname: '/(verification)/bank-account-type',
+      params: { bankName },
+    });
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader title="Identity Verification" />
+
       <View style={styles.scroll}>
-        {/* Bank logo placeholder */}
         <View style={styles.bankLogoRow}>
           <View style={styles.bankLogo}>
-            <Text style={styles.bankLogoText}>{(bankName || 'BK').slice(0, 2).toUpperCase()}</Text>
+            <Text style={styles.bankLogoText}>
+              {(bankName || 'BK').slice(0, 2).toUpperCase()}
+            </Text>
           </View>
           <Text style={styles.bankName}>{bankName || 'Bank'}</Text>
         </View>
@@ -58,7 +68,9 @@ export default function Bank2FAScreen() {
           {code.map((digit, idx) => (
             <TextInput
               key={idx}
-              ref={(r) => { inputs.current[idx] = r; }}
+              ref={(r) => {
+                inputs.current[idx] = r;
+              }}
               style={styles.codeBox}
               value={digit}
               onChangeText={(v) => handleChange(v, idx)}
@@ -69,6 +81,7 @@ export default function Bank2FAScreen() {
           ))}
         </View>
       </View>
+
       <View style={styles.actions}>
         <Button label="Continue" onPress={handleContinue} />
         <Button label="Back" variant="ghost" onPress={() => router.back()} />
@@ -80,19 +93,56 @@ export default function Bank2FAScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   scroll: { flex: 1, padding: 24 },
-  bankLogoRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
-  bankLogo: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
+  bankLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 24,
   },
-  bankLogoText: { color: Colors.white, fontWeight: '800', fontSize: 18 },
-  bankName: { fontSize: 22, fontWeight: '700', color: Colors.textDark },
-  heading: { fontSize: 18, fontWeight: '700', color: Colors.textDark, marginBottom: 8 },
-  subheading: { fontSize: 13, color: Colors.textMid, lineHeight: 20, marginBottom: 28 },
-  codeRow: { flexDirection: 'row', justifyContent: 'center', gap: 12 },
+  bankLogo: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bankLogoText: {
+    color: Colors.white,
+    fontWeight: '800',
+    fontSize: 18,
+  },
+  bankName: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  heading: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textDark,
+    marginBottom: 8,
+  },
+  subheading: {
+    fontSize: 13,
+    color: Colors.textMid,
+    lineHeight: 20,
+    marginBottom: 28,
+  },
+  codeRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+  },
   codeBox: {
-    width: 50, height: 56, borderWidth: 1.5, borderColor: Colors.border,
-    borderRadius: 8, fontSize: 22, fontWeight: '700', color: Colors.textDark,
+    width: 50,
+    height: 56,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.textDark,
     backgroundColor: Colors.surface,
   },
   actions: { padding: 24, gap: 8 },

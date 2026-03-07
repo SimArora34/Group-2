@@ -10,32 +10,42 @@ export default function IdentityIntroScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader title="Identity Verification" />
+
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.heading}>Let's verify your identity.</Text>
 
         <Text style={styles.body}>
-          We are legally mandated to verify your identity in order to conduct business in Canada.
+          We are legally mandated to verify your identity in order to conduct
+          business in Canada.
         </Text>
         <Text style={styles.body}>
-          For security, all users of Contribiia are required to verify their identity before
-          participating in a savings club.
+          For security, all users of Contribiia are required to verify their
+          identity before participating in a savings club.
         </Text>
         <Text style={styles.body}>
-          Your information is encrypted and will not be used outside of confirming your identity.
+          Your information is encrypted and will not be used outside of
+          confirming your identity.
         </Text>
 
-        {/* Legal disclaimer placeholder */}
         <View style={styles.disclaimer}>
           <Text style={styles.disclaimerText}>
-            Contribiia is authorised by XXXXX Agency and more legalese goes here in the rest of the
-            sentence. Something about having no guarantee of your money and risk and all that legal
-            disclaimer.
+            Contribiia is authorised by XXXXX Agency and more legalese goes here
+            in the rest of the sentence. Something about having no guarantee of
+            your money and risk and all that legal disclaimer.
           </Text>
         </View>
       </ScrollView>
+
       <View style={styles.actions}>
-        <Button label="Verify identity" onPress={() => router.push('/(verification)/legal-name')} />
-        <Button label="Save and exit" variant="ghost" onPress={() => router.replace('/(tabs)')} />
+        <Button
+          label="Verify identity"
+          onPress={() => router.push('/(verification)/legal-name')}
+        />
+        <Button
+          label="Save and exit"
+          variant="ghost"
+          onPress={() => router.replace('/(tabs)')}
+        />
       </View>
     </SafeAreaView>
   );
