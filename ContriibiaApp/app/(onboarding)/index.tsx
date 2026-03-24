@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Image, ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/Button';
 import Logo from '../../components/Logo';
@@ -9,9 +9,12 @@ import mockData from '../../data/mockData.json';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Placeholder image colors per slide
-const SLIDE_COLORS = [Colors.primaryLight, '#FFF8E1', '#E8EAF6', '#FCE4EC'];
-const SLIDE_EMOJIS = ['💰', '📊', '🛡️', '👛'];
+const SLIDE_IMAGES: Record<string, ImageSourcePropType> = {
+  'pool-funds': require('../../assets/images/Pool_funds.png'),
+  'credit-score': require('../../assets/images/Credit_score.png'),
+  'security': require('../../assets/images/Security.png'),
+  'wallet': require('../../assets/images/Wallet.png'),
+};
 
 interface Slide {
   id: string;
@@ -20,15 +23,15 @@ interface Slide {
   image: string;
 }
 
-function SlideItem({ item, index }: { item: Slide; index: number }) {
+function SlideItem({ item }: { item: Slide; index: number }) {
   return (
     <View style={[styles.slide, { width: SCREEN_WIDTH - 48 }]}>
       <Text style={styles.slideTitle}>{item.title}</Text>
-      {/* Placeholder image */}
-      <View style={[styles.imagePlaceholder, { backgroundColor: SLIDE_COLORS[index % SLIDE_COLORS.length] }]}>
-        <Text style={styles.imageEmoji}>{SLIDE_EMOJIS[index % SLIDE_EMOJIS.length]}</Text>
-        <Text style={styles.imagePlaceholderText}>[ Illustration ]</Text>
-      </View>
+      <Image
+        source={SLIDE_IMAGES[item.image]}
+        style={styles.slideImage}
+        resizeMode="contain"
+      />
       <Text style={styles.slideDescription}>{item.description}</Text>
       <TouchableOpacity>
         <Text style={styles.learnMore}>Learn more</Text>
@@ -112,21 +115,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 26,
   },
-  imagePlaceholder: {
+  slideImage: {
+    width: '100%',
     height: 200,
     borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 16,
-  },
-  imageEmoji: {
-    fontSize: 64,
-    marginBottom: 8,
-  },
-  imagePlaceholderText: {
-    fontSize: 12,
-    color: Colors.textLight,
-    fontStyle: 'italic',
   },
   slideDescription: {
     fontSize: 14,

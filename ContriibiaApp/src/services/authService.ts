@@ -1,66 +1,44 @@
-import { supabase } from "../lib/supabaseClient";
+// MOCK MODE – Supabase calls are bypassed for client demo
+// To restore, revert this file from git
+import mockData from "../../data/mockData.json";
 import { ServiceResponse } from "../types";
+
+const MOCK_USER = mockData.users[0];
 
 export async function signUp(
   email: string,
-  password: string,
-  fullName?: string
+  _password: string,
+  _fullName?: string,
 ): Promise<ServiceResponse<{ email: string | null }>> {
-  try {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: fullName ?? "" },
-      },
-    });
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return {
-      success: true,
-      data: { email: data.user?.email ?? email },
-    };
-  } catch (e: any) {
-    return { success: false, error: e?.message ?? "Sign up failed" };
-  }
+  return { success: true, data: { email } };
 }
 
 export async function signIn(
   email: string,
-  password: string
+  _password: string,
 ): Promise<ServiceResponse<{ email: string | null }>> {
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return {
-      success: true,
-      data: { email: data.user?.email ?? email },
-    };
-  } catch (e: any) {
-    return { success: false, error: e?.message ?? "Sign in failed" };
-  }
+  return { success: true, data: { email: email || MOCK_USER.email } };
 }
 
 export async function signOut(): Promise<ServiceResponse<null>> {
-  try {
-    const { error } = await supabase.auth.signOut();
+  return { success: true, data: null };
+}
 
-    if (error) {
-      return { success: false, error: error.message };
-    }
+export async function resetPassword(
+  _email: string,
+): Promise<ServiceResponse<null>> {
+  return { success: true, data: null };
+}
 
-    return { success: true, data: null };
-  } catch (e: any) {
-    return { success: false, error: e?.message ?? "Sign out failed" };
-  }
+export async function verifyOtp(
+  _email: string,
+  _token: string,
+): Promise<ServiceResponse<null>> {
+  return { success: true, data: null };
+}
+
+export async function updatePassword(
+  _newPassword: string,
+): Promise<ServiceResponse<null>> {
+  return { success: true, data: null };
 }

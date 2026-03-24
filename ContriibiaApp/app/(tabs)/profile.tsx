@@ -1,18 +1,24 @@
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../../constants/Colors';
-import { signOut } from '@/src/services/authService';
-import { getCurrentProfile } from '@/src/services/profileService';
-import { getWallet } from '@/src/services/walletService';
-import { supabase } from '@/src/lib/supabaseClient';
+import { signOut } from "@/src/services/authService";
+import { getCurrentProfile } from "@/src/services/profileService";
+import { getWallet } from "@/src/services/walletService";
+import { router } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "../../constants/Colors";
 
 export default function ProfileScreen() {
-  const [fullName, setFullName] = useState('User');
-  const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState("User");
+  const [email, setEmail] = useState("");
   const [balance, setBalance] = useState<number>(0);
-  const [createdAt, setCreatedAt] = useState('');
+  const [createdAt, setCreatedAt] = useState("");
   const [loading, setLoading] = useState(false);
 
   const loadProfileData = async () => {
@@ -20,14 +26,9 @@ export default function ProfileScreen() {
     const walletRes = await getWallet();
 
     if (profileRes.success && profileRes.data) {
-      setFullName(profileRes.data.full_name || 'User');
-      setEmail(profileRes.data.email || '');
-      setCreatedAt(profileRes.data.created_at || '');
-    } else {
-      const { data } = await supabase.auth.getUser();
-      const userEmail = data.user?.email ?? '';
-      setEmail(userEmail);
-      setFullName(userEmail ? userEmail.split('@')[0] : 'User');
+      setFullName(profileRes.data.full_name || "User");
+      setEmail(profileRes.data.email || "");
+      setCreatedAt(profileRes.data.created_at || "");
     }
 
     if (walletRes.success && walletRes.data) {
@@ -47,32 +48,32 @@ export default function ProfileScreen() {
     setLoading(false);
 
     if (!result.success) {
-      Alert.alert('Logout Failed', result.error || 'Something went wrong');
+      Alert.alert("Logout Failed", result.error || "Something went wrong");
       return;
     }
 
-    router.replace('/(auth)');
+    router.replace("/(auth)");
   };
 
   const initials = fullName
-    .split(' ')
+    .split(" ")
     .map((part) => part[0])
-    .join('')
+    .join("")
     .slice(0, 2)
     .toUpperCase();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={styles.screenTitle}>Profile</Text>
 
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials || 'U'}</Text>
+            <Text style={styles.avatarText}>{initials || "U"}</Text>
           </View>
 
           <Text style={styles.name}>{fullName}</Text>
-          <Text style={styles.email}>{email || 'No email available'}</Text>
+          <Text style={styles.email}>{email || "No email available"}</Text>
         </View>
 
         <View style={styles.infoCard}>
@@ -85,7 +86,7 @@ export default function ProfileScreen() {
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue}>{email || 'N/A'}</Text>
+            <Text style={styles.infoValue}>{email || "N/A"}</Text>
           </View>
 
           <View style={styles.infoRow}>
@@ -96,7 +97,7 @@ export default function ProfileScreen() {
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Account Created</Text>
             <Text style={styles.infoValue}>
-              {createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A'}
+              {createdAt ? new Date(createdAt).toLocaleDateString() : "N/A"}
             </Text>
           </View>
         </View>
@@ -104,14 +105,18 @@ export default function ProfileScreen() {
         <View style={styles.menuCard}>
           <Text style={styles.cardTitle}>Settings</Text>
 
-          {['Account Settings', 'Bank Accounts', 'Notifications', 'Security', 'Help & Support'].map(
-            (item) => (
-              <TouchableOpacity key={item} style={styles.menuItem}>
-                <Text style={styles.menuLabel}>{item}</Text>
-                <Text style={styles.menuArrow}>›</Text>
-              </TouchableOpacity>
-            )
-          )}
+          {[
+            "Account Settings",
+            "Bank Accounts",
+            "Notifications",
+            "Security",
+            "Help & Support",
+          ].map((item) => (
+            <TouchableOpacity key={item} style={styles.menuItem}>
+              <Text style={styles.menuLabel}>{item}</Text>
+              <Text style={styles.menuArrow}>›</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         <TouchableOpacity
@@ -120,7 +125,7 @@ export default function ProfileScreen() {
           disabled={loading}
         >
           <Text style={styles.logoutText}>
-            {loading ? 'Logging out...' : 'Log Out'}
+            {loading ? "Logging out..." : "Log Out"}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -139,14 +144,14 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Colors.textDark,
   },
   profileCard: {
     backgroundColor: Colors.surface,
     borderRadius: 16,
     padding: 24,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -155,26 +160,26 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 44,
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
   },
   avatarText: {
     color: Colors.white,
     fontSize: 30,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   name: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textDark,
     marginBottom: 4,
-    textAlign: 'center',
+    textAlign: "center",
   },
   email: {
     fontSize: 14,
     color: Colors.textMid,
-    textAlign: 'center',
+    textAlign: "center",
   },
   infoCard: {
     backgroundColor: Colors.surface,
@@ -192,13 +197,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Colors.textDark,
     marginBottom: 16,
   },
   infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 14,
     gap: 16,
   },
@@ -209,14 +214,14 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textDark,
     flex: 1,
-    textAlign: 'right',
+    textAlign: "right",
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
@@ -236,12 +241,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.error,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: Colors.white,
   },
   logoutText: {
     color: Colors.error,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

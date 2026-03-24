@@ -1,17 +1,25 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useRef, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../../components/Button';
-import Logo from '../../components/Logo';
-import { Colors } from '../../constants/Colors';
+import { verifyOtp } from "@/src/services/authService";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useRef, useState } from "react";
+import {
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Button from "../../components/Button";
+import Logo from "../../components/Logo";
+import { Colors } from "../../constants/Colors";
 
-const CODE_LENGTH = 5;
-const MOCK_CODE = '12345';
+const CODE_LENGTH = 6;
 
 export default function VerifyCodeScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
-  const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
+  const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(""));
+  const [loading, setLoading] = useState(false);
   const inputs = useRef<(TextInput | null)[]>([]);
 
   const handleChange = (val: string, idx: number) => {
@@ -26,34 +34,46 @@ export default function VerifyCodeScreen() {
     }
   };
 
-  const handleVerify = () => {
-    const entered = code.join('');
+  const handleVerify = async () => {
+    const entered = code.join("");
 
     if (entered.length < CODE_LENGTH) {
-      Alert.alert('Error', 'Please enter the full 5-digit code');
+      Alert.alert("Error", "Please enter the full 6-digit code");
       return;
     }
 
-    if (entered !== MOCK_CODE) {
-      Alert.alert('Invalid Code', `The code is incorrect. (Hint: use ${MOCK_CODE})`);
+    setLoading(true);
+
+    const result = await verifyOtp(email || "", entered);
+
+    setLoading(false);
+
+    if (!result.success) {
+      Alert.alert(
+        "Invalid Code",
+        result.error || "The code is incorrect. Please try again.",
+      );
       return;
     }
 
-    router.push('/(auth)/set-password');
+    router.push("/(auth)/set-password");
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.logoRow}>
           <Logo size="large" showTagline />
         </View>
 
         <Text style={styles.heading}>Check your email</Text>
         <Text style={styles.subheading}>
-          We sent a reset link to <Text style={styles.emailBold}>{email || 'your email'}</Text>.
-          {'\n'}
-          Enter the 5 digit code mentioned in the email.
+          We sent a reset link to{" "}
+          <Text style={styles.emailBold}>{email || "your email"}</Text>.{"\n"}
+          Enter the 6 digit code mentioned in the email.
         </Text>
 
         <View style={styles.codeRow}>
@@ -74,7 +94,7 @@ export default function VerifyCodeScreen() {
         </View>
 
         <View style={styles.spacer} />
-        <Button label="Verify Code" onPress={handleVerify} />
+        <Button label="Verify Code" onPress={handleVerify} loading={loading} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -83,23 +103,23 @@ export default function VerifyCodeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   scroll: { padding: 24, flexGrow: 1 },
-  logoRow: { alignItems: 'center', marginBottom: 32, marginTop: 8 },
+  logoRow: { alignItems: "center", marginBottom: 32, marginTop: 8 },
   heading: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textDark,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subheading: {
     fontSize: 14,
     color: Colors.textMid,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 28,
     lineHeight: 20,
   },
-  emailBold: { fontWeight: '700', color: Colors.textDark },
-  codeRow: { flexDirection: 'row', justifyContent: 'center', gap: 12 },
+  emailBold: { fontWeight: "700", color: Colors.textDark },
+  codeRow: { flexDirection: "row", justifyContent: "center", gap: 12 },
   codeBox: {
     width: 50,
     height: 56,
@@ -107,7 +127,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderRadius: 8,
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textDark,
     backgroundColor: Colors.surface,
   },

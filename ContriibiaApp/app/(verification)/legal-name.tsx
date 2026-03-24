@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import ScreenHeader from '../../components/ScreenHeader';
 import { Colors } from '../../constants/Colors';
+import { getCurrentProfile } from '../../src/services/profileService';
 
 const YEARS = Array.from({ length: 100 }, (_, i) =>
   String(new Date().getFullYear() - i)
@@ -34,13 +35,21 @@ function DropdownButton({
 }
 
 export default function LegalNameScreen() {
-  const [legalName, setLegalName] = useState('Jamie Taiwo');
+  const [legalName, setLegalName] = useState('');
   const [differentName, setDifferentName] = useState(false);
   const [actualName, setActualName] = useState('');
   const [year, setYear] = useState('');
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
   const [gender, setGender] = useState('');
+
+  useEffect(() => {
+    getCurrentProfile().then((res) => {
+      if (res.success && res.data?.full_name) {
+        setLegalName(res.data.full_name);
+      }
+    });
+  }, []);
 
   const handleContinue = () => {
     if ((!differentName && !legalName) || (differentName && !actualName)) {

@@ -1,51 +1,62 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../../components/Button';
-import Input from '../../components/Input';
-import Logo from '../../components/Logo';
-import { Colors } from '../../constants/Colors';
+import { updatePassword } from "@/src/services/authService";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Button from "../../components/Button";
+import Input from "../../components/Input";
+import Logo from "../../components/Logo";
+import { Colors } from "../../constants/Colors";
 
 export default function SetPasswordScreen() {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in both fields');
+      Alert.alert("Error", "Please fill in both fields");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert("Error", "Passwords do not match");
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
+      Alert.alert("Error", "Password must be at least 8 characters");
       return;
     }
 
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      router.replace('/(auth)/password-success');
-    }, 700);
+    const result = await updatePassword(password);
+
+    setLoading(false);
+
+    if (!result.success) {
+      Alert.alert("Error", result.error || "Failed to update password");
+      return;
+    }
+
+    router.replace("/(auth)/password-success");
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.logoRow}>
           <Logo size="large" showTagline />
         </View>
 
         <Text style={styles.heading}>Set a new Password</Text>
         <Text style={styles.subheading}>
-          Create a new password. Ensure it differs from previous ones for security.
+          Create a new password. Ensure it differs from previous ones for
+          security.
         </Text>
 
         <Input
@@ -64,7 +75,11 @@ export default function SetPasswordScreen() {
         />
 
         <View style={styles.spacer} />
-        <Button label="Update Password" onPress={handleUpdate} loading={loading} />
+        <Button
+          label="Update Password"
+          onPress={handleUpdate}
+          loading={loading}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -73,18 +88,18 @@ export default function SetPasswordScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   scroll: { padding: 24, flexGrow: 1 },
-  logoRow: { alignItems: 'center', marginBottom: 32, marginTop: 8 },
+  logoRow: { alignItems: "center", marginBottom: 32, marginTop: 8 },
   heading: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textDark,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subheading: {
     fontSize: 14,
     color: Colors.textMid,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 24,
     lineHeight: 20,
   },

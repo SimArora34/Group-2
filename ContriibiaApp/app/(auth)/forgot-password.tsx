@@ -1,39 +1,54 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../../components/Button';
-import Input from '../../components/Input';
-import Logo from '../../components/Logo';
-import { Colors } from '../../constants/Colors';
+import { resetPassword } from "@/src/services/authService";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Button from "../../components/Button";
+import Input from "../../components/Input";
+import Logo from "../../components/Logo";
+import { Colors } from "../../constants/Colors";
 
 export default function ForgotPasswordScreen() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email address');
+      Alert.alert("Error", "Please enter your email address");
       return;
     }
 
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      router.push({ pathname: '/(auth)/verify-code', params: { email } });
-    }, 700);
+    const result = await resetPassword(email.trim());
+
+    setLoading(false);
+
+    if (!result.success) {
+      Alert.alert("Error", result.error || "Failed to send reset email");
+      return;
+    }
+
+    router.push({
+      pathname: "/(auth)/verify-code",
+      params: { email: email.trim() },
+    });
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.logoRow}>
           <Logo size="large" showTagline />
         </View>
 
         <Text style={styles.heading}>Reset Password</Text>
-        <Text style={styles.subheading}>Please enter your email to reset the password</Text>
+        <Text style={styles.subheading}>
+          Please enter your email to reset the password
+        </Text>
 
         <Input
           label="Email address"
@@ -48,8 +63,11 @@ export default function ForgotPasswordScreen() {
         <Button label="Continue" onPress={handleContinue} loading={loading} />
 
         <Text style={styles.bottomText}>
-          Don't have an account?{' '}
-          <Text style={styles.link} onPress={() => router.replace('/(auth)/signup')}>
+          Don't have an account?{" "}
+          <Text
+            style={styles.link}
+            onPress={() => router.replace("/(auth)/signup")}
+          >
             Sign Up
           </Text>
         </Text>
@@ -68,21 +86,21 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   logoRow: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 32,
     marginTop: 8,
   },
   heading: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textDark,
     marginBottom: 6,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subheading: {
     fontSize: 14,
     color: Colors.textMid,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 24,
   },
   spacer: {
@@ -90,13 +108,13 @@ const styles = StyleSheet.create({
     minHeight: 32,
   },
   bottomText: {
-    textAlign: 'center',
+    textAlign: "center",
     color: Colors.textMid,
     fontSize: 14,
     marginTop: 16,
   },
   link: {
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

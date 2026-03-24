@@ -1,90 +1,45 @@
-import { supabase } from "../lib/supabaseClient";
+// MOCK MODE – Supabase calls are bypassed for client demo
+import mockData from "../../data/mockData.json";
 import { ServiceResponse, Transaction, Wallet } from "../types";
 
+let walletBalance = mockData.mockWallet.balance;
+const transactions = [...(mockData.mockTransactions as Transaction[])];
+
 export async function getWallet(): Promise<ServiceResponse<Wallet>> {
-  try {
-    const { data: userRes } = await supabase.auth.getUser();
-    const uid = userRes.user?.id;
-
-    if (!uid) {
-      return { success: false, error: "Not signed in" };
-    }
-
-    const { data, error } = await supabase
-      .from("wallets")
-      .select("id, user_id, balance, created_at")
-      .eq("user_id", uid)
-      .single();
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data: data as Wallet };
-  } catch (e: any) {
-    return { success: false, error: e?.message ?? "Failed to get wallet" };
-  }
+  return {
+    success: true,
+    data: { ...mockData.mockWallet, balance: walletBalance } as Wallet,
+  };
 }
 
 export async function getTransactions(): Promise<
   ServiceResponse<Transaction[]>
 > {
-  try {
-    const { data: userRes } = await supabase.auth.getUser();
-    const uid = userRes.user?.id;
-
-    if (!uid) {
-      return { success: false, error: "Not signed in" };
-    }
-
-    const { data, error } = await supabase
-      .from("transactions")
-      .select("id, user_id, wallet_id, amount, type, created_at")
-      .eq("user_id", uid)
-      .order("created_at", { ascending: false })
-      .limit(30);
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data: (data ?? []) as Transaction[] };
-  } catch (e: any) {
-    return {
-      success: false,
-      error: e?.message ?? "Failed to get transactions",
-    };
-  }
+  return { success: true, data: transactions };
 }
 
 export async function deposit(amount: number): Promise<ServiceResponse<null>> {
-  try {
-    const { error } = await supabase.rpc("wallet_deposit", {
-      p_amount: amount,
-    });
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data: null };
-  } catch (e: any) {
-    return { success: false, error: e?.message ?? "Deposit failed" };
-  }
+  walletBalance += amount;
+  transactions.unshift({
+    id: `t${Date.now()}`,
+    user_id: "u1",
+    wallet_id: "w1",
+    amount,
+    type: "deposit",
+    created_at: new Date().toISOString(),
+  });
+  return { success: true, data: null };
 }
 
 export async function withdraw(amount: number): Promise<ServiceResponse<null>> {
-  try {
-    const { error } = await supabase.rpc("wallet_withdraw", {
-      p_amount: amount,
-    });
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data: null };
-  } catch (e: any) {
-    return { success: false, error: e?.message ?? "Withdraw failed" };
-  }
+  walletBalance -= amount;
+  transactions.unshift({
+    id: `t${Date.now()}`,
+    user_id: "u1",
+    wallet_id: "w1",
+    amount,
+    type: "withdraw",
+    created_at: new Date().toISOString(),
+  });
+  return { success: true, data: null };
 }
