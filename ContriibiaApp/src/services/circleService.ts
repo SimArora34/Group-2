@@ -1,4 +1,6 @@
-// MOCK MODE – Supabase calls are bypassed for client demo
+// NOTE: The 'circles' and 'circle_members' tables are not yet in the database schema.
+// This service will be implemented once those tables are added to Supabase.
+// See src/docs/databaseSchema.md for the current schema.
 import mockData from "../../data/mockData.json";
 import { Circle, ServiceResponse, UUID } from "../types";
 

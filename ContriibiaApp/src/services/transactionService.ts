@@ -1,17 +1,27 @@
-// MOCK MODE – Supabase calls are bypassed for client demo
-import mockData from "../../data/mockData.json";
+import { supabase } from "../lib/supabaseClient";
 import { ServiceResponse, Transaction, UUID } from "../types";
 
-const transactions = mockData.mockTransactions as Transaction[];
-
 export async function getUserTransactions(
-  _userId: UUID,
+  userId: UUID,
 ): Promise<ServiceResponse<Transaction[]>> {
-  return { success: true, data: transactions };
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: (data ?? []) as Transaction[] };
 }
 
 export async function getCurrentUserTransactions(): Promise<
   ServiceResponse<Transaction[]>
 > {
-  return { success: true, data: transactions };
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: "Not authenticated" };
+
+  return getUserTransactions(user.id);
 }

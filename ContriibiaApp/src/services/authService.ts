@@ -1,44 +1,63 @@
-// MOCK MODE – Supabase calls are bypassed for client demo
-// To restore, revert this file from git
-import mockData from "../../data/mockData.json";
+import { supabase } from "../lib/supabaseClient";
 import { ServiceResponse } from "../types";
-
-const MOCK_USER = mockData.users[0];
 
 export async function signUp(
   email: string,
-  _password: string,
-  _fullName?: string,
+  password: string,
+  fullName?: string,
 ): Promise<ServiceResponse<{ email: string | null }>> {
-  return { success: true, data: { email } };
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName ?? "" } },
+  });
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: { email: data.user?.email ?? null } };
 }
 
 export async function signIn(
   email: string,
-  _password: string,
+  password: string,
 ): Promise<ServiceResponse<{ email: string | null }>> {
-  return { success: true, data: { email: email || MOCK_USER.email } };
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: { email: data.user?.email ?? null } };
 }
 
 export async function signOut(): Promise<ServiceResponse<null>> {
+  const { error } = await supabase.auth.signOut();
+  if (error) return { success: false, error: error.message };
   return { success: true, data: null };
 }
 
 export async function resetPassword(
-  _email: string,
+  email: string,
 ): Promise<ServiceResponse<null>> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  if (error) return { success: false, error: error.message };
   return { success: true, data: null };
 }
 
 export async function verifyOtp(
-  _email: string,
-  _token: string,
+  email: string,
+  token: string,
 ): Promise<ServiceResponse<null>> {
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "recovery",
+  });
+  if (error) return { success: false, error: error.message };
   return { success: true, data: null };
 }
 
 export async function updatePassword(
-  _newPassword: string,
+  newPassword: string,
 ): Promise<ServiceResponse<null>> {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) return { success: false, error: error.message };
   return { success: true, data: null };
 }

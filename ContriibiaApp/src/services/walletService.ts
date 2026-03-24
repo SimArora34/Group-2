@@ -1,45 +1,50 @@
-// MOCK MODE – Supabase calls are bypassed for client demo
-import mockData from "../../data/mockData.json";
+import { supabase } from "../lib/supabaseClient";
 import { ServiceResponse, Transaction, Wallet } from "../types";
 
-let walletBalance = mockData.mockWallet.balance;
-const transactions = [...(mockData.mockTransactions as Transaction[])];
-
 export async function getWallet(): Promise<ServiceResponse<Wallet>> {
-  return {
-    success: true,
-    data: { ...mockData.mockWallet, balance: walletBalance } as Wallet,
-  };
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: "Not authenticated" };
+
+  const { data, error } = await supabase
+    .from("wallets")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: data as Wallet };
 }
 
 export async function getTransactions(): Promise<
   ServiceResponse<Transaction[]>
 > {
-  return { success: true, data: transactions };
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) return { success: false, error: "Not authenticated" };
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: (data ?? []) as Transaction[] };
 }
 
 export async function deposit(amount: number): Promise<ServiceResponse<null>> {
-  walletBalance += amount;
-  transactions.unshift({
-    id: `t${Date.now()}`,
-    user_id: "u1",
-    wallet_id: "w1",
-    amount,
-    type: "deposit",
-    created_at: new Date().toISOString(),
-  });
+  const { error } = await supabase.rpc("wallet_deposit", { p_amount: amount });
+  if (error) return { success: false, error: error.message };
   return { success: true, data: null };
 }
 
 export async function withdraw(amount: number): Promise<ServiceResponse<null>> {
-  walletBalance -= amount;
-  transactions.unshift({
-    id: `t${Date.now()}`,
-    user_id: "u1",
-    wallet_id: "w1",
-    amount,
-    type: "withdraw",
-    created_at: new Date().toISOString(),
-  });
+  const { error } = await supabase.rpc("wallet_withdraw", { p_amount: amount });
+  if (error) return { success: false, error: error.message };
   return { success: true, data: null };
 }

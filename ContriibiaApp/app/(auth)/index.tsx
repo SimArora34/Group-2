@@ -19,19 +19,18 @@ export default function AuthIndex() {
         <View style={styles.logoSection}>
           <Logo size="large" showTagline />
           <Text style={styles.taglineText}>Save together, achieve more!</Text>
+          <View style={styles.actions}>
+            <Button
+              label="Sign Up"
+              variant="outline"
+              onPress={() => router.push('/(auth)/signup')}
+            />
+            <Button
+              label="Log In"
+              onPress={() => router.push('/(auth)/login')}
+            />
+          </View>
         </View>
-      </View>
-
-      <View style={styles.actions}>
-        <Button
-          label="Sign Up"
-          variant="outline"
-          onPress={() => router.push('/(auth)/signup')}
-        />
-        <Button
-          label="Log In"
-          onPress={() => router.push('/(auth)/login')}
-        />
       </View>
     </SafeAreaView>
   );
@@ -94,8 +93,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   actions: {
+    width: '100%',
     paddingHorizontal: 24,
-    paddingBottom: 32,
+    paddingTop: 32,
     gap: 12,
   },
 });
