@@ -12,6 +12,10 @@ export default function WalletLayout() {
         headerTitleStyle: { fontWeight: '700' },
         headerShadowVisible: false,
       }}
-    />
+    >
+      <Stack.Screen name="add-money" options={{ title: 'Add money' }} />
+      <Stack.Screen name="withdraw-money" options={{ title: 'Withdraw Money' }} />
+      <Stack.Screen name="confirmation" options={{ title: 'Confirmation', headerLeft: () => null }} />
+    </Stack>
   );
 }

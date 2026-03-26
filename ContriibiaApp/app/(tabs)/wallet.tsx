@@ -2,14 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -17,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
 import { getCurrentProfile } from '@/src/services/profileService';
-import { deposit, getTransactions, getWallet, withdraw } from '@/src/services/walletService';
+import { getTransactions, getWallet } from '@/src/services/walletService';
 
 type Tx = {
   id: string;
@@ -27,7 +22,6 @@ type Tx = {
 };
 
 type WalletTab = 'personal' | 'business';
-type AmountModalMode = 'deposit' | 'withdraw' | null;
 
 const QUICK_ACTIONS_PERSONAL = [
   { id: 'send', icon: 'paper-plane-outline' as const, label: 'Send Money' },
@@ -50,10 +44,6 @@ export default function WalletScreen() {
   const [transactions, setTransactions] = useState<Tx[]>([]);
   const [fullName, setFullName] = useState('User');
   const [balanceVisible, setBalanceVisible] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [amountModal, setAmountModal] = useState<AmountModalMode>(null);
-  const [amountInput, setAmountInput] = useState('');
-
   const loadWallet = async () => {
     const [profileRes, walletRes, txRes] = await Promise.all([
       getCurrentProfile(),
@@ -75,32 +65,6 @@ export default function WalletScreen() {
   useEffect(() => {
     loadWallet();
   }, []);
-
-  const handleAmountConfirm = async () => {
-    const amount = parseFloat(amountInput);
-    if (!amount || amount <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid amount greater than 0.');
-      return;
-    }
-
-    setLoading(true);
-    setAmountModal(null);
-    setAmountInput('');
-
-    const res = amountModal === 'deposit' ? await deposit(amount) : await withdraw(amount);
-
-    if (!res.success) {
-      setLoading(false);
-      Alert.alert(
-        amountModal === 'deposit' ? 'Deposit Failed' : 'Withdraw Failed',
-        res.error || 'Something went wrong'
-      );
-      return;
-    }
-
-    await loadWallet();
-    setLoading(false);
-  };
 
   const handleQuickAction = (id: string) => {
     switch (id) {
@@ -236,21 +200,15 @@ export default function WalletScreen() {
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionBtnPrimary]}
-                onPress={() => { setAmountModal('deposit'); setAmountInput(''); }}
-                disabled={loading}
+                onPress={() => router.push('/(wallet)/add-money' as any)}
               >
-                <Text style={styles.actionBtnPrimaryText}>
-                  {loading ? 'Processing...' : 'Add money'}
-                </Text>
+                <Text style={styles.actionBtnPrimaryText}>Add money</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.actionBtnOutline]}
-                onPress={() => { setAmountModal('withdraw'); setAmountInput(''); }}
-                disabled={loading}
+                onPress={() => router.push('/(wallet)/withdraw-money' as any)}
               >
-                <Text style={styles.actionBtnOutlineText}>
-                  {loading ? 'Processing...' : 'Withdraw'}
-                </Text>
+                <Text style={styles.actionBtnOutlineText}>Withdraw</Text>
               </TouchableOpacity>
             </View>
 
@@ -273,40 +231,6 @@ export default function WalletScreen() {
         )}
       </ScrollView>
 
-      {/* ── Amount Input Modal ── */}
-      <Modal
-        visible={amountModal !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setAmountModal(null)}
-      >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
-              {amountModal === 'deposit' ? 'Add Money' : 'Withdraw'}
-            </Text>
-            <Text style={styles.modalSub}>Enter the amount</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={amountInput}
-              onChangeText={setAmountInput}
-              keyboardType="decimal-pad"
-              placeholder="0.00"
-              placeholderTextColor={Colors.textPlaceholder}
-              autoFocus
-            />
-            <TouchableOpacity style={styles.modalConfirm} onPress={handleAmountConfirm}>
-              <Text style={styles.modalConfirmText}>Confirm</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalCancel} onPress={() => setAmountModal(null)}>
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -564,59 +488,6 @@ const styles = StyleSheet.create({
   setupButtonText: {
     color: Colors.white,
     fontWeight: '700',
-    fontSize: 15,
-  },
-  // ── Amount Modal ──
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 28,
-    gap: 12,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.textDark,
-  },
-  modalSub: {
-    fontSize: 14,
-    color: Colors.textMid,
-  },
-  modalInput: {
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 24,
-    fontWeight: '700',
-    color: Colors.textDark,
-    marginTop: 4,
-  },
-  modalConfirm: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  modalConfirmText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  modalCancel: {
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  modalCancelText: {
-    color: Colors.textMid,
     fontSize: 15,
   },
 });
