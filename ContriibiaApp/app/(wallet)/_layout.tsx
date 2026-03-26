@@ -26,6 +26,11 @@ export default function WalletLayout() {
       <Stack.Screen name="biometrics" options={{ title: 'App Wallet' }} />
       <Stack.Screen name="more" options={{ title: 'More' }} />
       <Stack.Screen name="qr-code" options={{ title: 'App Wallet' }} />
+      <Stack.Screen name="freeze-card" options={{ title: 'Freeze Card' }} />
+      <Stack.Screen name="view-my-cards" options={{ title: 'View My Cards' }} />
+      <Stack.Screen name="manage-accounts" options={{ title: 'Manage Accounts' }} />
+      <Stack.Screen name="tap-to-pay" options={{ title: 'Setup Tap & Pay' }} />
+      <Stack.Screen name="billing-address" options={{ title: 'Billing Address' }} />
     </Stack>
   );
 }

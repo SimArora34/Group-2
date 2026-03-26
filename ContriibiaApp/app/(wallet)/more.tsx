@@ -32,14 +32,14 @@ export default function MoreScreen() {
 
         <Section title={isBusiness ? 'Business Card' : 'Personal Card'} />
         <View style={styles.group}>
-          <MenuItem label="Freeze Contribiia Cards" onPress={comingSoon} />
-          <MenuItem label="Setup Tap to Pay (NFC)" onPress={comingSoon} />
+          <MenuItem label="Freeze Contribiia Cards" onPress={() => router.push('/(wallet)/freeze-card' as any)} />
+          <MenuItem label="Setup Tap to Pay (NFC)" onPress={() => router.push('/(wallet)/tap-to-pay' as any)} />
         </View>
 
         <Section title={isBusiness ? 'External Cards and Account\nfor Business Wallet' : 'External Cards and Account\nFor Personal Wallet'} />
         <View style={styles.group}>
-          <MenuItem label="Manage Cards" onPress={() => router.push('/(wallet)/add-new-card' as any)} />
-          <MenuItem label="Manage Bank Accounts" onPress={comingSoon} />
+          <MenuItem label="Manage Cards" onPress={() => router.push('/(wallet)/view-my-cards' as any)} />
+          <MenuItem label="Manage Bank Accounts" onPress={() => router.push('/(wallet)/manage-accounts' as any)} />
         </View>
 
         <Section title="Transaction History" />
