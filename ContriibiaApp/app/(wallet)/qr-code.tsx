@@ -1,49 +1,54 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Clipboard, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { getCurrentProfile } from '@/src/services/profileService';
 
 export default function QrCodeScreen() {
   const [email, setEmail] = useState('');
+  const shareLink = `https://contribiia.com/pay/${email.split('@')[0] || 'user'}`;
 
   useEffect(() => {
     getCurrentProfile().then((res) => {
-      if (res.success && res.data?.email) {
-        setEmail(res.data.email);
-      }
+      if (res.success && res.data?.email) setEmail(res.data.email);
     });
   }, []);
 
+  const handleCopy = () => {
+    Clipboard.setString(shareLink);
+  };
+
   const handleShare = async () => {
-    await Share.share({
-      message: `Pay me on Contribia: ${email}`,
-    });
+    await Share.share({ message: `Pay me on Contribiia: ${shareLink}` });
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.body}>
-        <Text style={styles.title}>Receive Money</Text>
-        <Text style={styles.subtitle}>Share your Contribia ID to receive payments</Text>
+        <Text style={styles.title}>Scan to pay</Text>
 
-        {/* QR placeholder – replace with a real QR library when available */}
+        {/* QR placeholder — install react-native-qrcode-svg for real QR generation */}
         <View style={styles.qrBox}>
-          <View style={styles.qrPlaceholder}>
-            <Ionicons name="qr-code" size={120} color={Colors.primary} />
-          </View>
-          <Text style={styles.qrNote}>QR code generation coming soon</Text>
+          <Ionicons name="qr-code" size={140} color={Colors.textDark} />
         </View>
 
-        <View style={styles.emailBadge}>
-          <Ionicons name="mail-outline" size={16} color={Colors.primary} />
-          <Text style={styles.emailText}>{email || 'Loading...'}</Text>
+        <Text style={styles.shareLabel}>Share link:</Text>
+        <View style={styles.linkRow}>
+          <TextInput
+            style={styles.linkInput}
+            value={shareLink}
+            editable={false}
+            selectTextOnFocus
+          />
+          <TouchableOpacity style={styles.copyBtn} onPress={handleCopy}>
+            <Text style={styles.copyBtnText}>Copy</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.shareBtn} onPress={handleShare} disabled={!email}>
           <Ionicons name="share-outline" size={18} color={Colors.white} />
-          <Text style={styles.shareBtnText}>Share My Contribia ID</Text>
+          <Text style={styles.shareBtnText}>Share My Contribiia ID</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -51,72 +56,28 @@ export default function QrCodeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  body: {
-    flex: 1,
-    padding: 24,
-    alignItems: 'center',
-    gap: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.textDark,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.textMid,
-    textAlign: 'center',
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
+  body: { flex: 1, padding: 24, alignItems: 'center', gap: 20 },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
   qrBox: {
-    alignItems: 'center',
-    gap: 12,
-    marginVertical: 12,
+    width: 220, height: 220, backgroundColor: Colors.white,
+    borderRadius: 16, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  qrPlaceholder: {
-    width: 200,
-    height: 200,
+  shareLabel: { fontSize: 13, color: Colors.textMid, alignSelf: 'flex-start' },
+  linkRow: { flexDirection: 'row', alignItems: 'center', width: '100%', gap: 8 },
+  linkInput: {
+    flex: 1, borderWidth: 1, borderColor: Colors.border, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: Colors.textMid,
     backgroundColor: Colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  qrNote: {
-    fontSize: 12,
-    color: Colors.textLight,
-  },
-  emailBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.primaryLight,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  emailText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.primary,
-  },
+  copyBtn: { backgroundColor: Colors.primary, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10 },
+  copyBtnText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
   shareBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    marginTop: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.primary, borderRadius: 12,
+    paddingVertical: 14, paddingHorizontal: 28, marginTop: 8,
   },
-  shareBtnText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 15,
-  },
+  shareBtnText: { color: Colors.white, fontWeight: '700', fontSize: 15 },
 });
