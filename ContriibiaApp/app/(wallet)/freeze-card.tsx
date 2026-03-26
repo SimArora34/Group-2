@@ -1,19 +1,36 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { getDefaultCard, updateCard } from '../../src/services/cardService';
+import { getWallet } from '../../src/services/walletService';
+import { Card } from '../../src/types';
 
 type Step = 'default' | 'freezeSuccess' | 'frozenView' | 'unfreezeSuccess';
 
-function VirtualCard({ frozen, business }: { frozen?: boolean; business?: boolean }) {
+function VirtualCard({
+  frozen,
+  business,
+  card,
+  balance,
+}: {
+  frozen?: boolean;
+  business?: boolean;
+  card: Card | null;
+  balance: number | null;
+}) {
+  const formattedBalance = balance !== null
+    ? `$${balance.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : '—';
+
   return (
     <View style={[styles.card, frozen && styles.cardFrozen, business && styles.cardBusiness]}>
       <View style={styles.cardTop}>
         <View style={styles.cardLockRow}>
           <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.7)" />
-          <Text style={styles.cardTopText}>•••• •••• •••• 9018</Text>
+          <Text style={styles.cardTopText}>•••• •••• •••• {card?.last4 ?? '••••'}</Text>
         </View>
         {business && (
           <View style={styles.businessBadge}>
@@ -21,12 +38,14 @@ function VirtualCard({ frozen, business }: { frozen?: boolean; business?: boolea
           </View>
         )}
       </View>
-      <Text style={styles.cardName}>{business ? 'BUSINESS ACCOUNT' : 'HITARTH PATEL'}</Text>
-      <Text style={styles.cardExpiry}>EXPIRES: MM/YY  CVV</Text>
+      <Text style={styles.cardName}>
+        {business ? 'BUSINESS ACCOUNT' : (card?.holder_name?.toUpperCase() ?? '—')}
+      </Text>
+      <Text style={styles.cardExpiry}>EXPIRES: {card?.expiry ?? 'MM/YY'}</Text>
       <View style={styles.cardBalanceRow}>
         <View>
           <Text style={styles.cardBalanceLabel}>Current Balance</Text>
-          <Text style={styles.cardBalanceAmt}>$X,XXX</Text>
+          <Text style={styles.cardBalanceAmt}>{formattedBalance}</Text>
         </View>
         <Ionicons name="eye-off-outline" size={20} color="rgba(255,255,255,0.7)" />
       </View>
@@ -36,6 +55,27 @@ function VirtualCard({ frozen, business }: { frozen?: boolean; business?: boolea
 
 export default function FreezeCardScreen() {
   const [step, setStep] = useState<Step>('default');
+  const [card, setCard] = useState<Card | null>(null);
+  const [balance, setBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    getDefaultCard('personal').then((res) => {
+      if (res.success) setCard(res.data ?? null);
+    });
+    getWallet().then((res) => {
+      if (res.success && res.data) setBalance(res.data.balance);
+    });
+  }, []);
+
+  const handleFreeze = async () => {
+    if (card) await updateCard(card.id, { is_frozen: true });
+    setStep('freezeSuccess');
+  };
+
+  const handleUnfreeze = async () => {
+    if (card) await updateCard(card.id, { is_frozen: false });
+    setStep('unfreezeSuccess');
+  };
 
   if (step === 'freezeSuccess') {
     return (
@@ -45,7 +85,7 @@ export default function FreezeCardScreen() {
             <Text style={styles.bannerText}>Card Temporarily Frozen!</Text>
           </View>
 
-          <VirtualCard frozen />
+          <VirtualCard frozen card={card} balance={balance} />
 
           <View style={styles.checkCircle}>
             <Ionicons name="checkmark" size={36} color={Colors.white} />
@@ -78,9 +118,9 @@ export default function FreezeCardScreen() {
             <Text style={styles.frozenNoticeText}>Click Unfreeze to activate your card again.</Text>
           </View>
 
-          <VirtualCard frozen />
+          <VirtualCard frozen card={card} balance={balance} />
 
-          <TouchableOpacity style={styles.unfreezeBtn} onPress={() => setStep('unfreezeSuccess')}>
+          <TouchableOpacity style={styles.unfreezeBtn} onPress={handleUnfreeze}>
             <Text style={styles.unfreezeBtnText}>Unfreeze the Card</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -96,7 +136,7 @@ export default function FreezeCardScreen() {
             <Text style={styles.bannerText}>Card Unfrozen!</Text>
           </View>
 
-          <VirtualCard />
+          <VirtualCard card={card} balance={balance} />
 
           <View style={styles.checkCircle}>
             <Ionicons name="checkmark" size={36} color={Colors.white} />
@@ -136,7 +176,7 @@ export default function FreezeCardScreen() {
 
         <VirtualCard />
 
-        <TouchableOpacity style={styles.freezeBtn} onPress={() => setStep('freezeSuccess')}>
+        <TouchableOpacity style={styles.freezeBtn} onPress={handleFreeze}>
           <Text style={styles.freezeBtnText}>Freeze the Card</Text>
         </TouchableOpacity>
       </ScrollView>
