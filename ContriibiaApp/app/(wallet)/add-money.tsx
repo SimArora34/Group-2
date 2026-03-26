@@ -95,7 +95,7 @@ export default function AddMoneyScreen() {
             <Ionicons name="chevron-down" size={18} color={Colors.white} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.autoLoadBtn}>
+          <TouchableOpacity style={styles.autoLoadBtn} onPress={() => router.push('/(wallet)/setup-auto-load' as any)}>
             <Text style={styles.autoLoadBtnText}>Setup Auto Load</Text>
           </TouchableOpacity>
 
