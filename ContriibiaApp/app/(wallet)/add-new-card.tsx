@@ -74,7 +74,7 @@ export default function AddNewCardScreen() {
             <Text style={styles.bold}>**** **** **** {maskedLast4}</Text>
             {' '}has been successfully added.
           </Text>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => router.replace('/(wallet)/more' as any)}>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => router.replace('/(wallet)/view-my-cards' as any)}>
             <Text style={styles.primaryBtnText}>View My Cards</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.outlineBtn} onPress={() => router.replace('/(tabs)/wallet' as any)}>
