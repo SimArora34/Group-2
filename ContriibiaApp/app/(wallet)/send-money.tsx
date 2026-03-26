@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,143 +13,114 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { getWallet } from '@/src/services/walletService';
 
 export default function SendMoneyScreen() {
-  const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [recipient, setRecipient] = useState('');
+  const [balance, setBalance] = useState<number | null>(null);
+  const [amountError, setAmountError] = useState('');
+  const [recipientError, setRecipientError] = useState('');
 
-  const handleSend = async () => {
+  useEffect(() => {
+    getWallet().then((res) => {
+      if (res.success && res.data) setBalance(Number(res.data.balance));
+    });
+  }, []);
+
+  const handleContinue = () => {
+    let valid = true;
+    if (!amount || parseFloat(amount) <= 0) {
+      setAmountError('Please enter a valid amount.');
+      valid = false;
+    } else {
+      setAmountError('');
+    }
     if (!recipient.trim()) {
-      Alert.alert('Missing Recipient', 'Please enter a recipient email or username.');
-      return;
+      setRecipientError('Please enter a recipient email or username.');
+      valid = false;
+    } else {
+      setRecipientError('');
     }
-    const parsed = parseFloat(amount);
-    if (!parsed || parsed <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid amount greater than 0.');
-      return;
-    }
+    if (!valid) return;
 
-    setLoading(true);
-    // TODO: call sendMoney(recipient, parsed) when service is implemented
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    Alert.alert('Coming Soon', 'Send money will be available once the feature is fully connected.', [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    router.push({
+      pathname: '/(wallet)/confirm-send',
+      params: { amount: parseFloat(amount).toFixed(2), recipient: recipient.trim() },
+    } as any);
   };
+
+  const handleClearAmount = () => setAmount('');
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <KeyboardAvoidingView
-        style={styles.inner}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.iconWrap}>
-          <Ionicons name="paper-plane" size={36} color={Colors.primary} />
-        </View>
-        <Text style={styles.title}>Send Money</Text>
-        <Text style={styles.subtitle}>Transfer funds to another Contribia user</Text>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Recipient (email or username)</Text>
+          <View style={styles.balanceRow}>
+            <Text style={styles.balanceLabel}>Current Balance:</Text>
+            <Text style={styles.balanceVal}>
+              {balance !== null ? `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '...'}
+            </Text>
+          </View>
+
+          <Text style={styles.fieldLabel}>Enter Amount</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={[styles.input, styles.inputFlex, !!amountError && styles.inputError]}
+              value={amount}
+              onChangeText={(v) => { setAmount(v); setAmountError(''); }}
+              placeholder="$0.00"
+              placeholderTextColor={Colors.textPlaceholder}
+              keyboardType="decimal-pad"
+            />
+            {!!amount && (
+              <TouchableOpacity style={styles.clearBtn} onPress={handleClearAmount}>
+                <Ionicons name="close-circle" size={20} color={Colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
+          {!!amountError && <Text style={styles.errorText}>{amountError}</Text>}
+
+          <Text style={styles.fieldLabel}>Receiver:</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, !!recipientError && styles.inputError]}
             value={recipient}
-            onChangeText={setRecipient}
-            placeholder="e.g. john@example.com"
+            onChangeText={(v) => { setRecipient(v); setRecipientError(''); }}
+            placeholder="Enter username or email address"
             placeholderTextColor={Colors.textPlaceholder}
             autoCapitalize="none"
             keyboardType="email-address"
           />
-        </View>
+          {!!recipientError && <Text style={styles.errorText}>{recipientError}</Text>}
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Amount ($)</Text>
-          <TextInput
-            style={styles.input}
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="0.00"
-            placeholderTextColor={Colors.textPlaceholder}
-            keyboardType="decimal-pad"
-          />
-        </View>
+          <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
+            <Text style={styles.continueBtnText}>Continue</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.sendBtn, loading && styles.sendBtnDisabled]}
-          onPress={handleSend}
-          disabled={loading}
-        >
-          <Text style={styles.sendBtnText}>{loading ? 'Sending...' : 'Send Money'}</Text>
-        </TouchableOpacity>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  inner: {
-    flex: 1,
-    padding: 24,
-    gap: 16,
-  },
-  iconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: Colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: Colors.textDark,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.textMid,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  field: {
-    gap: 6,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textDark,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
+  scroll: { padding: 20, gap: 12 },
+  balanceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  balanceLabel: { fontSize: 15, fontWeight: '600', color: Colors.textDark },
+  balanceVal: { fontSize: 15, fontWeight: '700', color: Colors.textDark },
+  fieldLabel: { fontSize: 14, fontWeight: '600', color: Colors.textDark },
+  inputRow: { flexDirection: 'row', alignItems: 'center' },
+  inputFlex: { flex: 1 },
+  clearBtn: { position: 'absolute', right: 12 },
   input: {
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: Colors.textDark,
+    borderWidth: 1.5, borderColor: Colors.border, borderRadius: 10,
+    paddingHorizontal: 16, paddingVertical: 13, fontSize: 16, color: Colors.textDark,
+    width: '100%',
   },
-  sendBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  sendBtnDisabled: {
-    opacity: 0.6,
-  },
-  sendBtnText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 16,
-  },
+  inputError: { borderColor: Colors.error },
+  errorText: { fontSize: 12, color: Colors.error, marginTop: -4 },
+  continueBtn: { backgroundColor: Colors.primary, borderRadius: 10, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
+  continueBtnText: { color: Colors.white, fontWeight: '700', fontSize: 16 },
 });
