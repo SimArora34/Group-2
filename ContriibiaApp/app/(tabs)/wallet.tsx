@@ -81,7 +81,7 @@ export default function WalletScreen() {
         router.push('/(wallet)/generate-invoice' as any);
         break;
       case 'more':
-        Alert.alert('More', 'Coming soon');
+        router.push({ pathname: '/(wallet)/more', params: { tab: activeTab } } as any);
         break;
     }
   };
