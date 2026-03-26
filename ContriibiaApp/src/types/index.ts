@@ -4,6 +4,35 @@ export interface Profile {
   id: UUID;
   full_name: string | null;
   email: string | null;
+  username: string | null;
+  created_at: string;
+}
+
+export interface Card {
+  id: UUID;
+  user_id: UUID;
+  holder_name: string;
+  last4: string;
+  expiry: string;
+  type: 'personal' | 'business';
+  bank_name: string | null;
+  is_frozen: boolean;
+  is_default: boolean;
+  billing_address_1: string | null;
+  billing_address_2: string | null;
+  billing_city: string | null;
+  billing_province: string | null;
+  billing_country: string | null;
+  created_at: string;
+}
+
+export interface BankAccount {
+  id: UUID;
+  user_id: UUID;
+  account_number: string;
+  bank_name: string;
+  account_type: 'SAVINGS' | 'CURRENT';
+  is_default: boolean;
   created_at: string;
 }
 
