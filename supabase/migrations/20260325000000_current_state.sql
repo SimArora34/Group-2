@@ -20,6 +20,7 @@ create table if not exists public.profiles (
   id         uuid primary key references auth.users (id) on delete cascade,
   full_name  text,
   email      text,
+  username   text unique,
   created_at timestamptz not null default now()
 );
 
@@ -32,7 +33,7 @@ create table if not exists public.wallets (
   unique (user_id)
 );
 
--- Records every deposit and withdrawal
+-- Records every deposit, withdrawal, and transfer
 create table if not exists public.transactions (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references public.profiles (id) on delete cascade,
@@ -42,14 +43,49 @@ create table if not exists public.transactions (
   created_at timestamptz not null default now()
 );
 
+-- Payment cards linked to a user's account
+-- Note: full card numbers and CVV are never stored here.
+-- Only the last 4 digits are retained for display purposes.
+-- Full card processing must go through a payment provider (e.g. Stripe).
+create table if not exists public.cards (
+  id                uuid primary key default gen_random_uuid(),
+  user_id           uuid not null references public.profiles (id) on delete cascade,
+  holder_name       text not null,
+  last4             text not null,
+  expiry            text not null,           -- stored as MM/YY
+  type              text not null default 'personal' check (type in ('personal', 'business')),
+  bank_name         text,
+  is_frozen         boolean not null default false,
+  is_default        boolean not null default false,
+  billing_address_1 text,
+  billing_address_2 text,
+  billing_city      text,
+  billing_province  text,
+  billing_country   text,
+  created_at        timestamptz not null default now()
+);
+
+-- External bank accounts linked by the user for deposits/withdrawals
+create table if not exists public.bank_accounts (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid not null references public.profiles (id) on delete cascade,
+  account_number text not null,              -- store last digits only, never full account number
+  bank_name      text not null,
+  account_type   text not null default 'SAVINGS' check (account_type in ('SAVINGS', 'CURRENT')),
+  is_default     boolean not null default false,
+  created_at     timestamptz not null default now()
+);
+
 
 -- ============================================================
 -- INDEXES
 -- ============================================================
 
-create index if not exists idx_wallets_user_id      on public.wallets(user_id);
+create index if not exists idx_wallets_user_id       on public.wallets(user_id);
 create index if not exists idx_transactions_user_id  on public.transactions(user_id);
 create index if not exists idx_transactions_wallet_id on public.transactions(wallet_id);
+create index if not exists idx_cards_user_id         on public.cards(user_id);
+create index if not exists idx_bank_accounts_user_id on public.bank_accounts(user_id);
 
 
 -- ============================================================
@@ -242,9 +278,11 @@ $$;
 alter table public.profiles     enable row level security;
 alter table public.wallets      enable row level security;
 alter table public.transactions  enable row level security;
+alter table public.cards         enable row level security;
+alter table public.bank_accounts enable row level security;
 
 -- Profiles: any logged-in user can read any profile.
--- Required for Send Money (looking up a recipient by email).
+-- Required for Send Money (looking up a recipient by email) and invoice user search.
 drop policy if exists "profiles_select_own"           on public.profiles;
 drop policy if exists "profiles_select_authenticated"  on public.profiles;
 
@@ -264,4 +302,48 @@ drop policy if exists "transactions_select_own" on public.transactions;
 
 create policy "transactions_select_own"
   on public.transactions for select
+  using (auth.uid() = user_id);
+
+-- Cards: users can only read, insert, update, and delete their own cards
+drop policy if exists "cards_select_own" on public.cards;
+drop policy if exists "cards_insert_own" on public.cards;
+drop policy if exists "cards_update_own" on public.cards;
+drop policy if exists "cards_delete_own" on public.cards;
+
+create policy "cards_select_own"
+  on public.cards for select
+  using (auth.uid() = user_id);
+
+create policy "cards_insert_own"
+  on public.cards for insert
+  with check (auth.uid() = user_id);
+
+create policy "cards_update_own"
+  on public.cards for update
+  using (auth.uid() = user_id);
+
+create policy "cards_delete_own"
+  on public.cards for delete
+  using (auth.uid() = user_id);
+
+-- Bank accounts: users can only read, insert, update, and delete their own accounts
+drop policy if exists "bank_accounts_select_own" on public.bank_accounts;
+drop policy if exists "bank_accounts_insert_own" on public.bank_accounts;
+drop policy if exists "bank_accounts_update_own" on public.bank_accounts;
+drop policy if exists "bank_accounts_delete_own" on public.bank_accounts;
+
+create policy "bank_accounts_select_own"
+  on public.bank_accounts for select
+  using (auth.uid() = user_id);
+
+create policy "bank_accounts_insert_own"
+  on public.bank_accounts for insert
+  with check (auth.uid() = user_id);
+
+create policy "bank_accounts_update_own"
+  on public.bank_accounts for update
+  using (auth.uid() = user_id);
+
+create policy "bank_accounts_delete_own"
+  on public.bank_accounts for delete
   using (auth.uid() = user_id);
