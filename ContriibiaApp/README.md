@@ -79,9 +79,11 @@ npx expo start --clear
 
 ## Database Migrations (Supabase)
 
-We use the **Supabase CLI** to track and deploy database changes. This means every change to the database (new table, new function, etc.) is saved as a file in the `supabase/migrations/` folder and committed to git — so the whole team stays in sync.
+We use the **Supabase CLI** to track and deploy database changes. Every change to the database (new table, new function, etc.) is saved as a `.sql` file in the `supabase/migrations/` folder and committed to git — so the whole team stays in sync.
 
-> **Important:** Always run these commands from inside the `ContriibiaApp` folder.
+> **Note:** We write migration files manually. This means **Docker is not required** for our workflow.
+
+> **Important:** The `supabase/` folder lives at the **root of the repo** (next to `ContriibiaApp/`), not inside it. Run migration commands from the repo root.
 
 ---
 
@@ -97,15 +99,12 @@ npx supabase login
 
 This will open a browser window. Log in with the team Supabase account.
 
-#### Step 2 — Initialize the Supabase folder (only if it doesn't exist yet)
+> You can also get an access token from https://supabase.com/dashboard/account/tokens and run:
+> `npx supabase login --token YOUR_TOKEN_HERE`
 
-```bash
-npx supabase init
-```
+#### Step 2 — Link to the development database
 
-> Skip this if the `supabase/` folder already exists in the project.
-
-#### Step 3 — Link to the development database
+Run this from the **repo root** (the `Group-2` folder):
 
 ```bash
 npx supabase link --project-ref alkuarsycuqhvwdqkmya
@@ -113,60 +112,63 @@ npx supabase link --project-ref alkuarsycuqhvwdqkmya
 
 When prompted for a database password, ask the project owner.
 
-#### Step 4 — Pull the current database schema
-
-```bash
-npx supabase db pull
-```
-
-This creates migration files in `supabase/migrations/` that capture the current state of the database. Commit these files to git.
-
 ---
 
 ### Making a Database Change
 
 Whenever you need to add a table, change a column, or add a function:
 
-#### Step 1 — Make your change
+#### Step 1 — Make your change in the Supabase Dashboard
 
-Make the change directly in the **Supabase Dashboard** on the development project, or write the SQL yourself.
+Go to the **dev project** on https://supabase.com and make your change using the Table Editor or SQL Editor.
 
-#### Step 2 — Generate a migration file
+#### Step 2 — Create a migration file manually
 
-```bash
-npx supabase db diff --use-migra -f describe_your_change_here
+Create a new `.sql` file in `supabase/migrations/`. The filename must start with a timestamp (`YYYYMMDDHHMMSS`) so migrations always run in order.
+
+**Example filename:**
+```
+supabase/migrations/20260326120000_add_notifications_table.sql
 ```
 
-Replace `describe_your_change_here` with a short name for your change, using underscores instead of spaces. Examples:
-- `add_wallet_send_function`
-- `add_notifications_table`
-- `add_profile_avatar_column`
+Use the current date and time for the numbers. A few more examples:
+- `20260326120000_add_notifications_table.sql`
+- `20260326130000_add_profile_avatar_column.sql`
+- `20260326140000_add_wallet_send_function.sql`
 
-This creates a new file in `supabase/migrations/` with a timestamp and your name.
+#### Step 3 — Write the SQL in that file
 
-#### Step 3 — Review the file
+Open the file you just created and paste in the SQL for your change. For example:
 
-Open the newly created file in `supabase/migrations/` and make sure it looks correct — it should contain only the SQL for the change you made.
+```sql
+-- Migration: add_notifications_table
+CREATE TABLE notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id),
+  message text,
+  created_at timestamptz DEFAULT now()
+);
+```
 
 #### Step 4 — Commit the migration file to git
 
 ```bash
 git add supabase/migrations/
-git commit -m "Add migration: describe_your_change_here"
+git commit -m "Add migration: add_notifications_table"
 git push
 ```
 
-> Never delete or edit old migration files. They are a permanent history of all database changes.
+> **Never delete or edit old migration files.** They are the permanent history of all database changes.
 
 ---
 
 ### Deploying to Production
 
-Once your changes are tested on the dev database and your migration file is committed, follow these steps to deploy to the production database.
+Once your changes are tested on dev and your migration file is committed, deploy to production.
 
 > **Only do this when the feature is ready.** Do not deploy unfinished work to production.
 
-#### Step 1 — Switch the link to the production database
+#### Step 1 — Link to the production database
 
 ```bash
 npx supabase link --project-ref budfthcjotckvtgityhr
@@ -180,7 +182,7 @@ When prompted for a database password, ask the project owner for the **productio
 npx supabase db push
 ```
 
-This applies any migration files that haven't been run on production yet. You will see output confirming which migrations were applied.
+This runs any migration files that haven't been applied to production yet. You will see output confirming which files were applied.
 
 #### Step 3 — Switch back to development
 
@@ -188,15 +190,15 @@ This applies any migration files that haven't been run on production yet. You wi
 npx supabase link --project-ref alkuarsycuqhvwdqkmya
 ```
 
-Always switch back to dev after deploying so you don't accidentally run future changes on production.
+Always switch back to dev after deploying so you don't accidentally affect production next time.
 
 ---
 
-### Pulling Changes a Teammate Made
+### Applying a Teammate's Database Changes
 
-If a teammate made a database change and pushed a new migration file, you need to apply it to your linked dev database.
+If a teammate added a new migration file and pushed it to git, you need to apply it to the dev database.
 
-#### Step 1 — Pull the latest code from git
+#### Step 1 — Pull the latest code
 
 ```bash
 git pull
@@ -208,7 +210,7 @@ git pull
 npx supabase db push
 ```
 
-This will apply any new migration files from your teammates to your linked database.
+This runs any migration files your teammate added that haven't been applied to your linked database yet.
 
 ---
 
