@@ -1,133 +1,402 @@
-import { signOut } from "@/src/services/authService";
-import { getCurrentProfile } from "@/src/services/profileService";
-import { getWallet } from "@/src/services/walletService";
+import AppIcon from "@/components/AppIcon";
+import {
+  getCurrentProfile,
+  updateCurrentProfile,
+} from "@/src/services/profileService";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
 
+type ScreenMode = "view" | "edit" | "success";
+
+type ProfileForm = {
+  fullName: string;
+  username: string;
+  email: string;
+  phone: string;
+  createdAt: string;
+};
+
+function HeaderAction({
+  name,
+  onPress,
+}: {
+  name: string;
+  onPress?: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      style={styles.headerIconButton}
+    >
+      <AppIcon name={name} size={22} color={Colors.textDark} />
+    </TouchableOpacity>
+  );
+}
+
+function ProfileField({
+  label,
+  value,
+  onChangeText,
+  keyboardType = "default",
+  autoCapitalize = "words",
+}: {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  keyboardType?: "default" | "email-address" | "phone-pad";
+  autoCapitalize?: "none" | "words";
+}) {
+  return (
+    <View style={styles.fieldBlock}>
+      <Text style={styles.fieldLabel}>
+        {label}
+        <Text style={styles.required}> *</Text>
+      </Text>
+      <View style={styles.fieldShell}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          style={styles.fieldInput}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          placeholderTextColor={Colors.textPlaceholder}
+        />
+        {!!value && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => onChangeText("")}
+            style={styles.clearButton}
+          >
+            <AppIcon name="close" size={16} color={Colors.primary} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
-  const [fullName, setFullName] = useState("User");
-  const [email, setEmail] = useState("");
-  const [balance, setBalance] = useState<number>(0);
-  const [createdAt, setCreatedAt] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const loadProfileData = async () => {
-    const profileRes = await getCurrentProfile();
-    const walletRes = await getWallet();
-
-    if (profileRes.success && profileRes.data) {
-      setFullName(profileRes.data.full_name || "User");
-      setEmail(profileRes.data.email || "");
-      setCreatedAt(profileRes.data.created_at || "");
-    }
-
-    if (walletRes.success && walletRes.data) {
-      setBalance(Number(walletRes.data.balance));
-    }
-  };
+  const [mode, setMode] = useState<ScreenMode>("view");
+  const [saving, setSaving] = useState(false);
+  const [profile, setProfile] = useState<ProfileForm>({
+    fullName: "Jamie Taiwo",
+    username: "ja_ta2409",
+    email: "",
+    phone: "+1 234 567 890",
+    createdAt: "",
+  });
+  const [draft, setDraft] = useState(profile);
+  const [usernameNotice, setUsernameNotice] = useState(profile.username);
 
   useEffect(() => {
-    loadProfileData();
+    (async () => {
+      const profileRes = await getCurrentProfile();
+
+      if (!profileRes.success || !profileRes.data) {
+        return;
+      }
+
+      const loadedProfile = {
+        fullName: profileRes.data.full_name || "Jamie Taiwo",
+        username: profileRes.data.username || "ja_ta2409",
+        email: profileRes.data.email || "",
+        phone: profileRes.data.phone || "+1 234 567 890",
+        createdAt: profileRes.data.created_at || "",
+      };
+
+      setProfile(loadedProfile);
+      setDraft(loadedProfile);
+      setUsernameNotice(loadedProfile.username);
+    })();
   }, []);
 
-  const handleLogout = async () => {
-    setLoading(true);
+  const memberSince = profile.createdAt
+    ? new Date(profile.createdAt).toLocaleDateString("en-US", {
+        month: "short",
+        year: "numeric",
+      })
+    : "Jun 2025";
 
-    const result = await signOut();
+  const initials =
+    profile.fullName
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "JT";
 
-    setLoading(false);
+  const hasChanges =
+    draft.fullName.trim() !== profile.fullName.trim() ||
+    draft.username.trim() !== profile.username.trim() ||
+    draft.email.trim() !== profile.email.trim() ||
+    draft.phone.trim() !== profile.phone.trim();
 
-    if (!result.success) {
-      Alert.alert("Logout Failed", result.error || "Something went wrong");
+  const canSave =
+    hasChanges &&
+    !!draft.fullName.trim() &&
+    !!draft.username.trim() &&
+    !!draft.phone.trim();
+
+  const score = 8.5;
+  const historyItems = [
+    "5 on-time payments",
+    "Participant in 2 clubs",
+  ];
+
+  const handleStartEdit = () => {
+    setDraft(profile);
+    setMode("edit");
+  };
+
+  const handleSave = async () => {
+    if (!canSave) {
       return;
     }
 
-    router.replace("/(auth)");
+    setSaving(true);
+
+    const result = await updateCurrentProfile({
+      full_name: draft.fullName.trim(),
+      username: draft.username.trim().replace(/^@/, ""),
+      email: draft.email.trim(),
+      phone: draft.phone.trim(),
+    });
+
+    setSaving(false);
+
+    if (!result.success) {
+      Alert.alert("Update failed", result.error || "Unable to save profile.");
+      return;
+    }
+
+    const nextProfile = {
+      fullName: draft.fullName.trim(),
+      username: draft.username.trim().replace(/^@/, ""),
+      email: draft.email.trim(),
+      phone: draft.phone.trim(),
+      createdAt: profile.createdAt,
+    };
+
+    setProfile(nextProfile);
+    setDraft(nextProfile);
+    setUsernameNotice(nextProfile.username);
+    setMode("success");
   };
 
-  const initials = fullName
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const renderAvatar = (editable = false) => (
+    <TouchableOpacity
+      activeOpacity={editable ? 0.8 : 1}
+      disabled={!editable}
+      onPress={() =>
+        editable &&
+        Alert.alert(
+          "Profile photo",
+          "Photo upload is the next profile feature to wire up.",
+        )
+      }
+      style={[styles.avatar, editable && styles.avatarEditable]}
+    >
+      {editable ? (
+        <AppIcon name="photo-camera" size={30} color={Colors.textMid} />
+      ) : (
+        <Text style={styles.avatarText}>{initials}</Text>
+      )}
+    </TouchableOpacity>
+  );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <View style={styles.header}>
+        <HeaderAction name="arrow-back" onPress={() => router.back()} />
+        <Text style={styles.headerTitle}>
+          {mode === "edit" ? "Edit User Profile" : "User Profile"}
+        </Text>
+        <View style={styles.headerRight}>
+          <HeaderAction name="chat-bubble-outline" />
+          <HeaderAction name="notifications-none" />
+        </View>
+      </View>
+
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.screenTitle}>Profile</Text>
+        {mode === "success" && (
+          <>
+            <View style={styles.successBanner}>
+              <Text style={styles.successBannerText}>
+                Profile updated successfully!
+              </Text>
+            </View>
 
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials || "U"}</Text>
-          </View>
+            <View style={styles.successCard}>
+              <View style={styles.successIcon}>
+                <AppIcon name="check" size={48} color={Colors.white} />
+              </View>
+              <Text style={styles.successTitle}>Congratulations!</Text>
+              <Text style={styles.successMessage}>
+                Your <Text style={styles.emphasis}>username</Text> has been
+                changed to{" "}
+                <Text style={styles.successUsername}>@{usernameNotice}</Text>
+              </Text>
 
-          <Text style={styles.name}>{fullName}</Text>
-          <Text style={styles.email}>{email || "No email available"}</Text>
-        </View>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.primaryButton}
+                onPress={() => setMode("view")}
+              >
+                <Text style={styles.primaryButtonText}>Go back to My Profile</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
 
-        <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Account Details</Text>
+        {mode !== "success" && (
+          <>
+            <View style={styles.profileIntro}>
+              {mode === "view" && (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => router.push("/settings")}
+                  style={styles.settingsButton}
+                >
+                  <AppIcon name="settings" size={24} color={Colors.textDark} />
+                </TouchableOpacity>
+              )}
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Full Name</Text>
-            <Text style={styles.infoValue}>{fullName}</Text>
-          </View>
+              {renderAvatar(mode === "edit")}
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue}>{email || "N/A"}</Text>
-          </View>
+              {mode === "view" ? (
+                <>
+                  <View style={styles.nameRow}>
+                    <Text style={styles.name}>{profile.fullName}</Text>
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={handleStartEdit}
+                      style={styles.inlineEditButton}
+                    >
+                      <AppIcon name="edit" size={18} color="#F2A43A" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.username}>@{profile.username}</Text>
+                  {!!profile.email && (
+                    <Text style={styles.emailText}>{profile.email}</Text>
+                  )}
+                  <Text style={styles.memberSince}>Member since: {memberSince}</Text>
+                </>
+              ) : (
+                <View style={styles.editPanel}>
+                  <ProfileField
+                    label="Name"
+                    value={draft.fullName}
+                    onChangeText={(text) =>
+                      setDraft((current) => ({ ...current, fullName: text }))
+                    }
+                  />
+                  <ProfileField
+                    label="Username"
+                    value={`@${draft.username.replace(/^@/, "")}`}
+                    autoCapitalize="none"
+                    onChangeText={(text) =>
+                      setDraft((current) => ({
+                        ...current,
+                        username: text.replace(/^@/, ""),
+                      }))
+                    }
+                  />
+                  <ProfileField
+                    label="Email address"
+                    value={draft.email}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    onChangeText={(text) =>
+                      setDraft((current) => ({ ...current, email: text }))
+                    }
+                  />
+                  <ProfileField
+                    label="Phone number"
+                    value={draft.phone}
+                    keyboardType="phone-pad"
+                    onChangeText={(text) =>
+                      setDraft((current) => ({ ...current, phone: text }))
+                    }
+                  />
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Wallet Balance</Text>
-            <Text style={styles.infoValue}>${balance.toFixed(2)}</Text>
-          </View>
+                  <TouchableOpacity
+                    activeOpacity={canSave ? 0.85 : 1}
+                    disabled={!canSave || saving}
+                    style={[
+                      styles.primaryButton,
+                      (!canSave || saving) && styles.primaryButtonDisabled,
+                    ]}
+                    onPress={handleSave}
+                  >
+                    <Text
+                      style={[
+                        styles.primaryButtonText,
+                        (!canSave || saving) && styles.primaryButtonTextDisabled,
+                      ]}
+                    >
+                      {saving ? "Saving..." : "Save Changes"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Account Created</Text>
-            <Text style={styles.infoValue}>
-              {createdAt ? new Date(createdAt).toLocaleDateString() : "N/A"}
-            </Text>
-          </View>
-        </View>
+            {mode === "view" && (
+              <View style={styles.trustSection}>
+                <Text style={styles.sectionTitle}>Contriibia Trust Score</Text>
 
-        <View style={styles.menuCard}>
-          <Text style={styles.cardTitle}>Settings</Text>
+                <View style={styles.scoreCircle}>
+                  <Text style={styles.scoreText}>{score.toFixed(1)}</Text>
+                </View>
 
-          {[
-            "Account Settings",
-            "Bank Accounts",
-            "Notifications",
-            "Security",
-            "Help & Support",
-          ].map((item) => (
-            <TouchableOpacity key={item} style={styles.menuItem}>
-              <Text style={styles.menuLabel}>{item}</Text>
-              <Text style={styles.menuArrow}>›</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+                <Text style={styles.scoreCaption}>Out of 2 ratings*</Text>
 
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          disabled={loading}
-        >
-          <Text style={styles.logoutText}>
-            {loading ? "Logging out..." : "Log Out"}
-          </Text>
-        </TouchableOpacity>
+                <View style={styles.starRow}>
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <AppIcon
+                      key={index}
+                      name="star"
+                      size={32}
+                      color="#F4A93D"
+                    />
+                  ))}
+                </View>
+
+                <View style={styles.detailBlock}>
+                  <Text style={styles.detailHeading}>User History</Text>
+                  {historyItems.map((item) => (
+                    <View key={item} style={styles.detailRow}>
+                      <AppIcon name="check-box" size={18} color="#3DA7BA" />
+                      <Text style={styles.detailText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={styles.detailBlock}>
+                  <Text style={styles.detailHeading}>Feedback</Text>
+                  <View style={styles.detailRow}>
+                    <AppIcon name="chat" size={18} color="#3DA7BA" />
+                    <Text style={styles.detailText}>
+                      “Great at communicating”
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -138,115 +407,264 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white,
   },
-  scroll: {
-    padding: 20,
-    gap: 16,
-  },
-  screenTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: Colors.textDark,
-  },
-  profileCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  avatarText: {
-    color: Colors.white,
-    fontSize: 30,
-    fontWeight: "800",
-  },
-  name: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: Colors.textDark,
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  email: {
-    fontSize: 14,
-    color: Colors.textMid,
-    textAlign: "center",
-  },
-  infoCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  menuCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: Colors.textDark,
-    marginBottom: 16,
-  },
-  infoRow: {
+  header: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
-    gap: 16,
-  },
-  infoLabel: {
-    fontSize: 15,
-    color: Colors.textMid,
-    flex: 1,
-  },
-  infoValue: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Colors.textDark,
-    flex: 1,
-    textAlign: "right",
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+    borderBottomColor: Colors.border,
   },
-  menuLabel: {
+  headerTitle: {
     flex: 1,
-    fontSize: 15,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "700",
     color: Colors.textDark,
   },
-  menuArrow: {
-    fontSize: 20,
-    color: Colors.textLight,
-  },
-  logoutButton: {
-    marginTop: 8,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: Colors.error,
-    borderRadius: 12,
+  headerRight: {
+    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.white,
+    gap: 8,
   },
-  logoutText: {
-    color: Colors.error,
+  headerIconButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scroll: {
+    paddingBottom: 40,
+  },
+  profileIntro: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    alignItems: "center",
+  },
+  settingsButton: {
+    alignSelf: "flex-end",
+    marginBottom: -6,
+  },
+  avatar: {
+    width: 78,
+    height: 78,
+    borderRadius: 39,
+    backgroundColor: "#D5DCE7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+  avatarEditable: {
+    backgroundColor: "#D9D9D9",
+  },
+  avatarText: {
+    color: Colors.textDark,
+    fontSize: 28,
+    fontWeight: "800",
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#163841",
+    textAlign: "center",
+  },
+  inlineEditButton: {
+    paddingTop: 3,
+  },
+  username: {
     fontSize: 15,
+    color: Colors.textMid,
+    marginTop: 4,
+    textAlign: "center",
+    maxWidth: "100%",
+    paddingHorizontal: 12,
+  },
+  emailText: {
+    fontSize: 14,
+    color: Colors.textMid,
+    marginTop: 4,
+    lineHeight: 20,
+    textAlign: "center",
+    maxWidth: "100%",
+    paddingHorizontal: 12,
+  },
+  memberSince: {
+    marginTop: 8,
+    fontSize: 14,
+    color: Colors.textDark,
+    lineHeight: 20,
+    textAlign: "center",
+    maxWidth: "100%",
+    paddingHorizontal: 12,
+  },
+  trustSection: {
+    paddingHorizontal: 20,
+    paddingTop: 26,
+    alignItems: "center",
+  },
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: "700",
+    color: Colors.textDark,
+    marginBottom: 18,
+  },
+  scoreCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#15849A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scoreText: {
+    fontSize: 40,
+    fontWeight: "800",
+    color: Colors.white,
+  },
+  scoreCaption: {
+    fontSize: 11,
+    color: Colors.textMid,
+    marginTop: 14,
+    lineHeight: 16,
+    textAlign: "center",
+    maxWidth: "100%",
+    paddingHorizontal: 12,
+  },
+  starRow: {
+    flexDirection: "row",
+    marginTop: 6,
+    marginBottom: 24,
+    gap: 2,
+  },
+  detailBlock: {
+    width: "100%",
+    marginBottom: 16,
+  },
+  detailHeading: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.textDark,
+    marginBottom: 10,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 12,
+    width: "100%",
+  },
+  detailText: {
+    flex: 1,
+    fontSize: 15,
+    lineHeight: 22,
+    color: Colors.textDark,
+    flexWrap: "wrap",
+  },
+  editPanel: {
+    width: "100%",
+  },
+  fieldBlock: {
+    marginBottom: 16,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    color: Colors.textDark,
+    marginBottom: 6,
+  },
+  required: {
+    color: Colors.error,
+  },
+  fieldShell: {
+    minHeight: 50,
+    borderWidth: 1,
+    borderColor: "#5D8790",
+    borderRadius: 10,
+    backgroundColor: Colors.white,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  fieldInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.textDark,
+  },
+  clearButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryButton: {
+    marginTop: 8,
+    minHeight: 54,
+    borderRadius: 10,
+    backgroundColor: "#2F96A7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryButtonDisabled: {
+    backgroundColor: "#CBD6DA",
+  },
+  primaryButtonText: {
+    color: Colors.white,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  primaryButtonTextDisabled: {
+    color: "#96A2A8",
+  },
+  successBanner: {
+    backgroundColor: "#D7EFF5",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  successBannerText: {
+    fontSize: 14,
+    color: Colors.textDark,
+  },
+  successCard: {
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    alignItems: "center",
+  },
+  successIcon: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: "#1D7C68",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 26,
+    borderWidth: 3,
+    borderColor: "#C9E6DB",
+  },
+  successTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: Colors.textDark,
+    marginBottom: 18,
+  },
+  successMessage: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: Colors.textDark,
+    textAlign: "center",
+    marginBottom: 34,
+  },
+  emphasis: {
+    fontStyle: "italic",
+  },
+  successUsername: {
+    fontWeight: "800",
   },
 });
