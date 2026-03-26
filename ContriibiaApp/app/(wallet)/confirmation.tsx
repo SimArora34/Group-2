@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Clipboard, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { getDefaultBankAccount } from '../../src/services/bankAccountService';
+import { BankAccount } from '../../src/types';
 
 export default function ConfirmationScreen() {
   const { type, amount, txId } = useLocalSearchParams<{
@@ -13,6 +15,15 @@ export default function ConfirmationScreen() {
   }>();
 
   const isDeposit = type === 'deposit';
+  const [defaultAccount, setDefaultAccount] = useState<BankAccount | null>(null);
+
+  useEffect(() => {
+    if (!isDeposit) {
+      getDefaultBankAccount().then((res) => {
+        if (res.success && res.data) setDefaultAccount(res.data);
+      });
+    }
+  }, [isDeposit]);
 
   const handleCopyTxId = () => {
     Clipboard.setString(txId ?? '');
@@ -55,12 +66,24 @@ export default function ConfirmationScreen() {
           <View style={styles.detailRow}>
             <Text style={styles.detailKeySmall}>To</Text>
           </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailKey}>AC No: 1240984</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailSubVal}>Bank: ScotiaBank</Text>
-          </View>
+          {isDeposit ? (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailKey}>Contribiia Wallet</Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailKey}>
+                  {defaultAccount ? `AC No: ${defaultAccount.account_number}` : 'Personal Bank Account'}
+                </Text>
+              </View>
+              {defaultAccount && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailSubVal}>Bank: {defaultAccount.bank_name}</Text>
+                </View>
+              )}
+            </>
+          )}
 
           <View style={styles.divider} />
 
@@ -68,10 +91,7 @@ export default function ConfirmationScreen() {
             <Text style={styles.detailKeySmall}>From</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailKey}>Personal Wallet</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailSubVal}>App Wallet</Text>
+            <Text style={styles.detailKey}>Contribiia Wallet</Text>
           </View>
         </View>
 
