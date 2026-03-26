@@ -174,7 +174,7 @@ export default function FreezeCardScreen() {
           </Text>
         </View>
 
-        <VirtualCard />
+        <VirtualCard card={card} balance={balance} />
 
         <TouchableOpacity style={styles.freezeBtn} onPress={handleFreeze}>
           <Text style={styles.freezeBtnText}>Freeze the Card</Text>
