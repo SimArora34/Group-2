@@ -1,63 +1,39 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../../components/Button';
-import Input from '../../components/Input';
-import ScreenHeader from '../../components/ScreenHeader';
-import { Colors } from '../../constants/Colors';
-import mockData from '../../data/mockData.json';
-
-function ProvinceDropdown({
-  value,
-  onSelect,
-}: {
-  value: string;
-  onSelect: (v: string) => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={styles.dropdown}
-      onPress={() =>
-        Alert.alert(
-          'Province / Territory',
-          '',
-          mockData.provinces.map((p) => ({
-            text: p,
-            onPress: () => onSelect(p),
-          }))
-        )
-      }
-    >
-      <Text style={value ? styles.dropdownValue : styles.dropdownPlaceholder}>
-        {value || 'Select province'}
-      </Text>
-      <Text style={styles.dropdownArrow}>▾</Text>
-    </TouchableOpacity>
-  );
-}
+import { router } from "expo-router";
+import React, { useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Button from "../../components/Button";
+import Input from "../../components/Input";
+import ScreenHeader from "../../components/ScreenHeader";
+import { SelectModal } from "../../components/SelectModal";
+import { Colors } from "../../constants/Colors";
+import mockData from "../../data/mockData.json";
 
 export default function AddressScreen() {
-  const [line1, setLine1] = useState('');
-  const [line2, setLine2] = useState('');
-  const [city, setCity] = useState('');
-  const [province, setProvince] = useState('');
-  const [postal, setPostal] = useState('');
+  const [line1, setLine1] = useState("");
+  const [line2, setLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [postal, setPostal] = useState("");
+  const [provinceOpen, setProvinceOpen] = useState(false);
 
   const handleContinue = () => {
     if (!line1 || !city || !province || !postal) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert("Error", "Please fill in all required fields");
       return;
     }
 
-    router.push('/(verification)/document-select');
+    router.push("/(verification)/document-select");
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       <ScreenHeader title="Identity Verification" />
 
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.sectionTitle}>Address</Text>
 
         <Input
@@ -85,7 +61,19 @@ export default function AddressScreen() {
           <Text style={styles.fieldLabel}>
             Province <Text style={styles.required}>*</Text>
           </Text>
-          <ProvinceDropdown value={province} onSelect={setProvince} />
+          <TouchableOpacity
+            style={styles.dropdown}
+            onPress={() => setProvinceOpen(true)}
+          >
+            <Text
+              style={
+                province ? styles.dropdownValue : styles.dropdownPlaceholder
+              }
+            >
+              {province || "Select province"}
+            </Text>
+            <Text style={styles.dropdownArrow}>▾</Text>
+          </TouchableOpacity>
         </TouchableOpacity>
 
         <Input
@@ -103,9 +91,18 @@ export default function AddressScreen() {
         <Button
           label="Save and exit"
           variant="ghost"
-          onPress={() => router.replace('/(tabs)')}
+          onPress={() => router.replace("/(tabs)")}
         />
       </TouchableOpacity>
+
+      <SelectModal
+        visible={provinceOpen}
+        title="Province / Territory"
+        options={mockData.provinces}
+        value={province}
+        onSelect={setProvince}
+        onClose={() => setProvinceOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -115,7 +112,7 @@ const styles = StyleSheet.create({
   scroll: { padding: 24, flexGrow: 1 },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textDark,
     marginBottom: 20,
   },
@@ -124,12 +121,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textDark,
     marginBottom: 6,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   required: { color: Colors.error },
   dropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 6,
