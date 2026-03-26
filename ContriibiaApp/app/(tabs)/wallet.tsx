@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
+import { getDefaultCard } from '@/src/services/cardService';
 import { getCurrentProfile } from '@/src/services/profileService';
 import { getTransactions, getWallet } from '@/src/services/walletService';
 
@@ -43,12 +44,14 @@ export default function WalletScreen() {
   const [balance, setBalance] = useState<number>(0);
   const [transactions, setTransactions] = useState<Tx[]>([]);
   const [fullName, setFullName] = useState('User');
+  const [cardLastFour, setCardLastFour] = useState<string | null>(null);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const loadWallet = async () => {
-    const [profileRes, walletRes, txRes] = await Promise.all([
+    const [profileRes, walletRes, txRes, cardRes] = await Promise.all([
       getCurrentProfile(),
       getWallet(),
       getTransactions(),
+      getDefaultCard('personal'),
     ]);
 
     if (profileRes.success && profileRes.data) {
@@ -59,6 +62,9 @@ export default function WalletScreen() {
     }
     if (txRes.success && txRes.data) {
       setTransactions(txRes.data as Tx[]);
+    }
+    if (cardRes.success && cardRes.data) {
+      setCardLastFour(cardRes.data.last4);
     }
   };
 
@@ -86,7 +92,6 @@ export default function WalletScreen() {
     }
   };
 
-  const cardLastFour = '0000';
   const nameDisplay = fullName.toUpperCase();
   const actions = activeTab === 'personal' ? QUICK_ACTIONS_PERSONAL : QUICK_ACTIONS_BUSINESS;
 
@@ -164,7 +169,7 @@ export default function WalletScreen() {
               </View>
 
               <Text style={styles.cardNumber}>
-                •••• •••• •••• {cardLastFour}
+                •••• •••• •••• {cardLastFour ?? '••••'}
               </Text>
 
               <View style={styles.cardMeta}>
