@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -13,17 +13,25 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { getCurrentProfile } from '../../src/services/profileService';
 
 type Step = 'form' | 'preview';
 
 export default function GenerateInvoiceScreen() {
   const [step, setStep] = useState<Step>('form');
+  const [senderName, setSenderName] = useState('');
   const [clientName, setClientName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [amount, setAmount] = useState('');
   const [taxPct, setTaxPct] = useState('13');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    getCurrentProfile().then((res) => {
+      if (res.success && res.data?.full_name) setSenderName(res.data.full_name);
+    });
+  }, []);
 
   const parsedAmount = parseFloat(amount) || 0;
   const parsedTax = parseFloat(taxPct) || 0;
@@ -67,8 +75,8 @@ export default function GenerateInvoiceScreen() {
               </View>
               <View style={styles.invoiceParty}>
                 <Text style={styles.invoicePartyLabel}>From</Text>
-                <Text style={styles.invoicePartyName}>Your Name</Text>
-                <Text style={styles.invoicePartyCompany}>App Wallet</Text>
+                <Text style={styles.invoicePartyName}>{senderName || '—'}</Text>
+                <Text style={styles.invoicePartyCompany}>Contribiia Wallet</Text>
               </View>
             </View>
             <View style={styles.invoiceDue}>
