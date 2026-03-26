@@ -45,6 +45,7 @@ export default function WalletScreen() {
   const [transactions, setTransactions] = useState<Tx[]>([]);
   const [fullName, setFullName] = useState('User');
   const [cardLastFour, setCardLastFour] = useState<string | null>(null);
+  const [cardExpiry, setCardExpiry] = useState<string | null>(null);
   const [balanceVisible, setBalanceVisible] = useState(true);
   const loadWallet = async () => {
     const [profileRes, walletRes, txRes, cardRes] = await Promise.all([
@@ -65,6 +66,7 @@ export default function WalletScreen() {
     }
     if (cardRes.success && cardRes.data) {
       setCardLastFour(cardRes.data.last4);
+      setCardExpiry(cardRes.data.expiry);
     }
   };
 
@@ -177,7 +179,7 @@ export default function WalletScreen() {
                   <Text style={styles.cardLabel}>
                     {activeTab === 'business' ? 'BUSINESS ACCOUNT' : nameDisplay}
                   </Text>
-                  <Text style={styles.cardExpiry}>EXPIRES: MM/YY</Text>
+                  <Text style={styles.cardExpiry}>EXPIRES: {cardExpiry ?? 'MM/YY'}</Text>
                 </View>
                 <View style={styles.cvvChip}>
                   <Text style={styles.cvvText}>CVV</Text>
