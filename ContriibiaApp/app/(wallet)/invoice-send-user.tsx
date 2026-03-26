@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FlatList,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,26 +11,39 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
-
-// Placeholder user list — replace with real Supabase query when contacts/circles are implemented
-const MOCK_USERS = [
-  { id: '1', name: 'Anna Francis', email: 'anna_fr2004@gmail.com', username: '@annafran04' },
-  { id: '2', name: 'Hitarth Patel', email: 'anna_fr2004@gmail.com', username: '@annafran04' },
-  { id: '3', name: 'Aish Patel', email: 'anna_fr2004@gmail.com', username: '@annafran04' },
-  { id: '4', name: 'Lina', email: 'anna_fr2004@gmail.com', username: '@annafran04' },
-];
+import { supabase } from '../../src/lib/supabaseClient';
+import { Profile } from '../../src/types';
 
 export default function InvoiceSendUserScreen() {
   const [search, setSearch] = useState('');
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const filtered = MOCK_USERS.filter(
-    (u) =>
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setUsers([]);
+      return;
+    }
+    const term = `%${search.trim()}%`;
+    supabase
+      .from('profiles')
+      .select('*')
+      .or(`full_name.ilike.${term},email.ilike.${term}`)
+      .neq('id', currentUserId ?? '')
+      .limit(20)
+      .then(({ data }) => setUsers((data ?? []) as Profile[]));
+  }, [search, currentUserId]);
+
+  const filtered = users;
 
   const handleSend = async () => {
     if (!selected) return;
@@ -91,9 +103,9 @@ export default function InvoiceSendUserScreen() {
                 <Ionicons name="person" size={20} color={Colors.primary} />
               </View>
               <View style={styles.userInfo}>
-                <Text style={styles.userName}>{item.name}</Text>
-                <Text style={styles.userEmail}>{item.email}</Text>
-                <Text style={styles.userHandle}>{item.username}</Text>
+                <Text style={styles.userName}>{item.full_name ?? '—'}</Text>
+                <Text style={styles.userEmail}>{item.email ?? ''}</Text>
+                {item.username && <Text style={styles.userHandle}>@{item.username}</Text>}
               </View>
               <Ionicons name="arrow-forward" size={18} color={Colors.primary} />
             </TouchableOpacity>
