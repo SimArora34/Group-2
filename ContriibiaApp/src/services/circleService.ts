@@ -32,3 +32,11 @@ export async function joinCircle(
 ): Promise<ServiceResponse<{ circleId: UUID; userId: UUID }>> {
   return { success: true, data: { circleId, userId } };
 }
+
+// Convenience wrapper — fetches circles for the currently signed-in user.
+// When the circles table is added to Supabase this will be updated to query it.
+export async function getCurrentUserCircles(): Promise<
+  ServiceResponse<Circle[]>
+> {
+  return { success: true, data: circles };
+}

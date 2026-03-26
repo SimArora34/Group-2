@@ -1,36 +1,28 @@
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Animated,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import AppIcon from "../../components/AppIcon";
 import ClubCard from "../../components/ClubCard";
 import ScreenHeader from "../../components/ScreenHeader";
 import { Colors } from "../../constants/Colors";
+import { getCurrentUserCircles } from "../../src/services/circleService";
+import { getCurrentProfile } from "../../src/services/profileService";
+import { Circle } from "../../src/types";
 
 type Club = {
   name: string;
   amount: string;
   status: string;
 };
-
-const PRIVATE_CLUBS: Club[] = [
-  { name: "Toronto Savers", amount: "$3000 CAD", status: "Active" },
-  { name: "Summer Trip", amount: "$1800 CAD", status: "Active" },
-  { name: "Sweet Baking", amount: "$1800 CAD", status: "Active" },
-];
-
-const PUBLIC_CLUBS: Club[] = [
-  { name: "Summer Trip", amount: "$3000 CAD", status: "Active" },
-  { name: "Sweet Baking", amount: "$1800 CAD", status: "Active" },
-];
 
 type ActionButtonProps = {
   label: string;
@@ -66,7 +58,25 @@ export default function DashboardScreen() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuAnimation = useRef(new Animated.Value(0)).current;
-  const hasClubs = PRIVATE_CLUBS.length + PUBLIC_CLUBS.length > 0;
+  const [firstName, setFirstName] = useState("there");
+  const [circles, setCircles] = useState<Circle[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const [profileRes, circlesRes] = await Promise.all([
+        getCurrentProfile(),
+        getCurrentUserCircles(),
+      ]);
+      if (profileRes.success && profileRes.data?.full_name) {
+        setFirstName(profileRes.data.full_name.split(" ")[0]);
+      }
+      if (circlesRes.success && circlesRes.data) {
+        setCircles(circlesRes.data);
+      }
+    })();
+  }, []);
+
+  const hasClubs = circles.length > 0;
 
   useEffect(() => {
     Animated.spring(menuAnimation, {
@@ -128,7 +138,7 @@ export default function DashboardScreen() {
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.title}>
-            {hasClubs ? "Welcome back, Jamie" : "Welcome, Jamie"}
+            {hasClubs ? `Welcome back, ${firstName}` : `Welcome, ${firstName}`}
           </Text>
 
           {!hasClubs && (
@@ -150,38 +160,22 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          {!!PRIVATE_CLUBS.length && (
+          {!!circles.length && (
             <View style={styles.sectionBlock}>
-              <Text style={styles.section}>Private Clubs</Text>
-              {PRIVATE_CLUBS.map((club) => (
+              <Text style={styles.section}>My Savings Clubs</Text>
+              {circles.map((circle) => (
                 <ClubCard
-                  key={`private-${club.name}`}
-                  name={club.name}
-                  amount={club.amount}
-                  status={club.status}
-                />
-              ))}
-            </View>
-          )}
-
-          {!!PUBLIC_CLUBS.length && (
-            <View style={styles.sectionBlock}>
-              <Text style={styles.section}>Public Clubs</Text>
-              {PUBLIC_CLUBS.map((club) => (
-                <ClubCard
-                  key={`public-${club.name}`}
-                  name={club.name}
-                  amount={club.amount}
-                  status={club.status}
+                  key={circle.id}
+                  name={circle.name}
+                  amount={`$${circle.contribution_amount.toLocaleString()} CAD`}
+                  status="Active"
                 />
               ))}
             </View>
           )}
         </ScrollView>
 
-        {menuOpen && (
-          <Pressable style={styles.backdrop} onPress={closeMenu} />
-        )}
+        {menuOpen && <Pressable style={styles.backdrop} onPress={closeMenu} />}
 
         <Animated.View
           pointerEvents={menuOpen ? "auto" : "none"}

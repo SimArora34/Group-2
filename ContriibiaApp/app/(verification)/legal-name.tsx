@@ -1,12 +1,12 @@
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "../../components/Button";
@@ -14,7 +14,10 @@ import Input from "../../components/Input";
 import ScreenHeader from "../../components/ScreenHeader";
 import { SelectModal } from "../../components/SelectModal";
 import { Colors } from "../../constants/Colors";
-import { getCurrentProfile } from "../../src/services/profileService";
+import {
+  getCurrentProfile,
+  saveVerificationInfo,
+} from "../../src/services/profileService";
 
 const YEARS = Array.from({ length: 100 }, (_, i) =>
   String(new Date().getFullYear() - i),
@@ -37,7 +40,7 @@ const MONTHS = [
 const DAYS = Array.from({ length: 31 }, (_, i) =>
   String(i + 1).padStart(2, "0"),
 );
-const GENDERS = ["Male", "Female", "Non-binary", "Prefer not to say"];
+const GENDERS = ["Male", "Female"];
 
 function DropdownButton({
   value,
@@ -70,6 +73,7 @@ export default function LegalNameScreen() {
   const [monthOpen, setMonthOpen] = useState(false);
   const [dayOpen, setDayOpen] = useState(false);
   const [genderOpen, setGenderOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     getCurrentProfile().then((res) => {
@@ -79,7 +83,7 @@ export default function LegalNameScreen() {
     });
   }, []);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if ((!differentName && !legalName) || (differentName && !actualName)) {
       Alert.alert("Error", "Please enter your legal name");
       return;
@@ -87,6 +91,22 @@ export default function LegalNameScreen() {
 
     if (!year || !month || !day) {
       Alert.alert("Error", "Please enter your date of birth");
+      return;
+    }
+
+    setLoading(true);
+    const nameToSave = differentName ? actualName : legalName;
+    const dob = `${year}-${month}-${day}`;
+
+    const res = await saveVerificationInfo({
+      legal_name: nameToSave,
+      date_of_birth: dob,
+      ...(gender ? { gender } : {}),
+    });
+    setLoading(false);
+
+    if (!res.success) {
+      Alert.alert("Error", res.error || "Failed to save. Please try again.");
       return;
     }
 
@@ -178,7 +198,7 @@ export default function LegalNameScreen() {
       </ScrollView>
 
       <View style={styles.actions}>
-        <Button label="Continue" onPress={handleContinue} />
+        <Button label="Continue" onPress={handleContinue} loading={loading} />
         <Button
           label="Save and exit"
           variant="ghost"

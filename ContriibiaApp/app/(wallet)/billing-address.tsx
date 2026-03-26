@@ -1,43 +1,67 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router } from "expo-router";
+import React, { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../../constants/Colors';
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "../../constants/Colors";
+import { saveAddress } from "../../src/services/profileService";
 
-type AddressMode = 'select' | 'manual';
+type AddressMode = "select" | "manual";
 
 export default function BillingAddressScreen() {
-  const [mode, setMode] = useState<AddressMode>('select');
-  const [street, setStreet] = useState('');
-  const [city, setCity] = useState('');
-  const [province, setProvince] = useState('');
-  const [postalCode, setPostalCode] = useState('');
+  const [mode, setMode] = useState<AddressMode>("select");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleContinue = () => {
-    // TODO: save address and mark business wallet as set up
-    // For now navigate back to wallet with business tab active
+  const handleContinue = async () => {
+    if (mode === "manual") {
+      if (!street || !city || !province || !postalCode) {
+        Alert.alert("Error", "Please fill in all address fields");
+        return;
+      }
+      setLoading(true);
+      const res = await saveAddress({
+        address_line1: street,
+        city,
+        province,
+        postal_code: postalCode,
+      });
+      setLoading(false);
+      if (!res.success) {
+        Alert.alert(
+          "Error",
+          res.error || "Failed to save address. Please try again.",
+        );
+        return;
+      }
+    }
     router.back();
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={styles.scroll}>
-          <Text style={styles.title}>Select an address to use as Billing Address</Text>
+          <Text style={styles.title}>
+            Select an address to use as Billing Address
+          </Text>
 
-          {mode === 'select' ? (
+          {mode === "select" ? (
             <View style={styles.optionGroup}>
               <TouchableOpacity
                 style={styles.optionBtn}
@@ -48,18 +72,40 @@ export default function BillingAddressScreen() {
 
               <TouchableOpacity
                 style={[styles.optionBtn, styles.optionBtnOutline]}
-                onPress={() => setMode('manual')}
+                onPress={() => setMode("manual")}
               >
-                <Text style={styles.optionBtnOutlineText}>Add another Address</Text>
+                <Text style={styles.optionBtnOutlineText}>
+                  Add another Address
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.formGroup}>
               {[
-                { label: 'Street Address', value: street, setter: setStreet, placeholder: '123 Main St' },
-                { label: 'City', value: city, setter: setCity, placeholder: 'Calgary' },
-                { label: 'Province', value: province, setter: setProvince, placeholder: 'AB' },
-                { label: 'Postal Code', value: postalCode, setter: setPostalCode, placeholder: 'T2P 1J9' },
+                {
+                  label: "Street Address",
+                  value: street,
+                  setter: setStreet,
+                  placeholder: "123 Main St",
+                },
+                {
+                  label: "City",
+                  value: city,
+                  setter: setCity,
+                  placeholder: "Calgary",
+                },
+                {
+                  label: "Province",
+                  value: province,
+                  setter: setProvince,
+                  placeholder: "AB",
+                },
+                {
+                  label: "Postal Code",
+                  value: postalCode,
+                  setter: setPostalCode,
+                  placeholder: "T2P 1J9",
+                },
               ].map(({ label, value, setter, placeholder }) => (
                 <View key={label} style={styles.field}>
                   <Text style={styles.label}>{label}</Text>
@@ -73,14 +119,23 @@ export default function BillingAddressScreen() {
                 </View>
               ))}
 
-              <TouchableOpacity style={styles.backLink} onPress={() => setMode('select')}>
+              <TouchableOpacity
+                style={styles.backLink}
+                onPress={() => setMode("select")}
+              >
                 <Text style={styles.backLinkText}>← Back to options</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
-            <Text style={styles.continueBtnText}>Continue</Text>
+          <TouchableOpacity
+            style={[styles.continueBtn, loading && { opacity: 0.6 }]}
+            onPress={handleContinue}
+            disabled={loading}
+          >
+            <Text style={styles.continueBtnText}>
+              {loading ? "Saving..." : "Continue"}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -99,7 +154,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textDark,
     lineHeight: 26,
   },
@@ -111,11 +166,11 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   optionBtnText: {
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 15,
   },
   optionBtnOutline: {
@@ -123,7 +178,7 @@ const styles = StyleSheet.create({
   },
   optionBtnOutlineText: {
     color: Colors.textMid,
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 15,
   },
   formGroup: {
@@ -134,7 +189,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.textDark,
   },
   input: {
@@ -152,17 +207,17 @@ const styles = StyleSheet.create({
   backLinkText: {
     color: Colors.primary,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   continueBtn: {
     backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   continueBtnText: {
     color: Colors.white,
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: 16,
   },
 });

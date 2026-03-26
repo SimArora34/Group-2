@@ -31,7 +31,7 @@ profiles
 wallets  
 │  
 ▼  
-transactions  
+transactions
 
 Relationship summary:
 
@@ -45,12 +45,32 @@ Relationship summary:
 
 Stores user profile information.
 
-| Column | Type | Description |
-|------|------|-------------|
-| id | uuid | Primary key, references auth.users.id |
-| full_name | text | User full name |
-| email | text | User email |
-| created_at | timestamptz | Account creation timestamp |
+| Column            | Type        | Description                              |
+| ----------------- | ----------- | ---------------------------------------- |
+| id                | uuid        | Primary key, references auth.users.id    |
+| full_name         | text        | User full name                           |
+| email             | text        | User email                               |
+| username          | text        | Chosen username                          |
+| phone             | text        | Phone number                             |
+| created_at        | timestamptz | Account creation timestamp               |
+| legal_name        | text        | Legal name (if different from full_name) |
+| date_of_birth     | text        | DOB in YYYY-MM-DD format                 |
+| gender            | text        | Gender identity                          |
+| address_line1     | text        | Home / verification address line 1       |
+| address_line2     | text        | Home address line 2 (optional)           |
+| city              | text        | City                                     |
+| province          | text        | Province or territory                    |
+| postal_code       | text        | Postal code                              |
+| personal_addr1    | text        | Personal billing address line 1          |
+| personal_addr2    | text        | Personal billing address line 2          |
+| personal_city     | text        | Personal billing city                    |
+| personal_province | text        | Personal billing province                |
+| personal_postal   | text        | Personal billing postal code             |
+| business_addr1    | text        | Business billing address line 1          |
+| business_addr2    | text        | Business billing address line 2          |
+| business_city     | text        | Business billing city                    |
+| business_province | text        | Business billing province                |
+| business_postal   | text        | Business billing postal code             |
 
 ---
 
@@ -58,11 +78,11 @@ Stores user profile information.
 
 Each user has exactly **one wallet**.
 
-| Column | Type | Description |
-|------|------|-------------|
-| id | uuid | Wallet ID |
-| user_id | uuid | References profiles.id |
-| balance | numeric | Wallet balance |
+| Column     | Type        | Description               |
+| ---------- | ----------- | ------------------------- |
+| id         | uuid        | Wallet ID                 |
+| user_id    | uuid        | References profiles.id    |
+| balance    | numeric     | Wallet balance            |
 | created_at | timestamptz | Wallet creation timestamp |
 
 Constraint:
@@ -77,14 +97,14 @@ Ensures each user only has one wallet.
 
 Stores wallet activity.
 
-| Column | Type | Description |
-|------|------|-------------|
-| id | uuid | Transaction ID |
-| user_id | uuid | References profiles.id |
-| wallet_id | uuid | References wallets.id |
-| amount | numeric | Transaction amount |
-| type | text | deposit or withdraw |
-| created_at | timestamptz | Transaction timestamp |
+| Column     | Type        | Description            |
+| ---------- | ----------- | ---------------------- |
+| id         | uuid        | Transaction ID         |
+| user_id    | uuid        | References profiles.id |
+| wallet_id  | uuid        | References wallets.id  |
+| amount     | numeric     | Transaction amount     |
+| type       | text        | deposit or withdraw    |
+| created_at | timestamptz | Transaction timestamp  |
 
 ---
 
@@ -100,6 +120,29 @@ create table if not exists public.profiles (
   email text,
   created_at timestamptz not null default now()
 );
+
+-- Migration: add extended profile columns (run once on existing databases)
+alter table public.profiles
+  add column if not exists username text,
+  add column if not exists phone text,
+  add column if not exists legal_name text,
+  add column if not exists date_of_birth text,
+  add column if not exists gender text,
+  add column if not exists address_line1 text,
+  add column if not exists address_line2 text,
+  add column if not exists city text,
+  add column if not exists province text,
+  add column if not exists postal_code text,
+  add column if not exists personal_addr1 text,
+  add column if not exists personal_addr2 text,
+  add column if not exists personal_city text,
+  add column if not exists personal_province text,
+  add column if not exists personal_postal text,
+  add column if not exists business_addr1 text,
+  add column if not exists business_addr2 text,
+  add column if not exists business_city text,
+  add column if not exists business_province text,
+  add column if not exists business_postal text;
 
 -- WALLETS (1 per user)
 create table if not exists public.wallets (
@@ -249,3 +292,4 @@ The Contribiia backend supports:
 •	Row-level data security
 This architecture supports a secure wallet MVP mobile application.
 
+```

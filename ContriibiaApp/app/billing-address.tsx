@@ -2,6 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+    Alert,
     ScrollView,
     StyleSheet,
     Text,
@@ -12,6 +13,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SelectModal } from "../components/SelectModal";
 import { Colors } from "../constants/Colors";
+import {
+    saveBusinessBillingAddress,
+    savePersonalBillingAddress,
+} from "../src/services/profileService";
 
 type Screen =
   | "manage"
@@ -98,13 +103,30 @@ export default function BillingAddressScreen() {
 
   // Track what changed for success message
   const [changedField, setChangedField] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const personalComplete =
     pAddr1.trim() && pCity.trim() && pProvince && pPostal.trim();
   const businessComplete =
     bAddr1.trim() && bCity.trim() && bProvince && bPostal.trim();
 
-  const handleSavePersonal = () => {
+  const handleSavePersonal = async () => {
+    setSaving(true);
+    const res = await savePersonalBillingAddress({
+      personal_addr1: pAddr1,
+      ...(pAddr2.trim() ? { personal_addr2: pAddr2 } : {}),
+      personal_city: pCity,
+      personal_province: pProvince,
+      personal_postal: pPostal,
+    });
+    setSaving(false);
+    if (!res.success) {
+      Alert.alert(
+        "Error",
+        res.error || "Failed to save address. Please try again.",
+      );
+      return;
+    }
     setChangedField(
       pPostal.trim()
         ? `Your Postal code has been changed to ${pPostal.trim()}`
@@ -113,7 +135,23 @@ export default function BillingAddressScreen() {
     setScreen("success-personal");
   };
 
-  const handleSaveBusiness = () => {
+  const handleSaveBusiness = async () => {
+    setSaving(true);
+    const res = await saveBusinessBillingAddress({
+      business_addr1: bAddr1,
+      ...(bAddr2.trim() ? { business_addr2: bAddr2 } : {}),
+      business_city: bCity,
+      business_province: bProvince,
+      business_postal: bPostal,
+    });
+    setSaving(false);
+    if (!res.success) {
+      Alert.alert(
+        "Error",
+        res.error || "Failed to save address. Please try again.",
+      );
+      return;
+    }
     setChangedField(
       bAddr1.trim()
         ? `Your Address Line 1 has been changed to ${bAddr1.trim()}`
@@ -270,12 +308,14 @@ export default function BillingAddressScreen() {
           <TouchableOpacity
             style={[
               styles.saveBtn,
-              !personalComplete && styles.saveBtnDisabled,
+              (!personalComplete || saving) && styles.saveBtnDisabled,
             ]}
             onPress={handleSavePersonal}
-            disabled={!personalComplete}
+            disabled={!personalComplete || saving}
           >
-            <Text style={styles.saveBtnText}>Save changes</Text>
+            <Text style={styles.saveBtnText}>
+              {saving ? "Saving..." : "Save changes"}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.cancelBtn}
@@ -362,12 +402,14 @@ export default function BillingAddressScreen() {
           <TouchableOpacity
             style={[
               styles.saveBtn,
-              !businessComplete && styles.saveBtnDisabled,
+              (!businessComplete || saving) && styles.saveBtnDisabled,
             ]}
             onPress={handleSaveBusiness}
-            disabled={!businessComplete}
+            disabled={!businessComplete || saving}
           >
-            <Text style={styles.saveBtnText}>Save changes</Text>
+            <Text style={styles.saveBtnText}>
+              {saving ? "Saving..." : "Save changes"}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.cancelBtn}

@@ -15,9 +15,13 @@ export async function getProfile(
 }
 
 export async function getCurrentProfile(): Promise<ServiceResponse<Profile>> {
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
-  if (authError || !user) return { success: false, error: authError?.message ?? "Not authenticated" };
+  if (authError || !user)
+    return { success: false, error: authError?.message ?? "Not authenticated" };
 
   const { data, error } = await supabase
     .from("profiles")
@@ -83,4 +87,90 @@ export async function updateCurrentProfile(updates: {
   }
 
   return getCurrentProfile();
+}
+
+export async function saveVerificationInfo(data: {
+  legal_name?: string;
+  date_of_birth?: string;
+  gender?: string;
+}): Promise<ServiceResponse<null>> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user)
+    return { success: false, error: authError?.message ?? "Not authenticated" };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update(data)
+    .eq("id", user.id);
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: null };
+}
+
+export async function saveAddress(data: {
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  province: string;
+  postal_code: string;
+}): Promise<ServiceResponse<null>> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user)
+    return { success: false, error: authError?.message ?? "Not authenticated" };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update(data)
+    .eq("id", user.id);
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: null };
+}
+
+export async function savePersonalBillingAddress(data: {
+  personal_addr1: string;
+  personal_addr2?: string;
+  personal_city: string;
+  personal_province: string;
+  personal_postal: string;
+}): Promise<ServiceResponse<null>> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user)
+    return { success: false, error: authError?.message ?? "Not authenticated" };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update(data)
+    .eq("id", user.id);
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: null };
+}
+
+export async function saveBusinessBillingAddress(data: {
+  business_addr1: string;
+  business_addr2?: string;
+  business_city: string;
+  business_province: string;
+  business_postal: string;
+}): Promise<ServiceResponse<null>> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user)
+    return { success: false, error: authError?.message ?? "Not authenticated" };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update(data)
+    .eq("id", user.id);
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: null };
 }

@@ -1,6 +1,12 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity } from "react-native";
+import {
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
@@ -8,6 +14,7 @@ import ScreenHeader from "../../components/ScreenHeader";
 import { SelectModal } from "../../components/SelectModal";
 import { Colors } from "../../constants/Colors";
 import mockData from "../../data/mockData.json";
+import { saveAddress } from "../../src/services/profileService";
 
 export default function AddressScreen() {
   const [line1, setLine1] = useState("");
@@ -16,10 +23,29 @@ export default function AddressScreen() {
   const [province, setProvince] = useState("");
   const [postal, setPostal] = useState("");
   const [provinceOpen, setProvinceOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!line1 || !city || !province || !postal) {
       Alert.alert("Error", "Please fill in all required fields");
+      return;
+    }
+
+    setLoading(true);
+    const res = await saveAddress({
+      address_line1: line1,
+      ...(line2 ? { address_line2: line2 } : {}),
+      city,
+      province,
+      postal_code: postal,
+    });
+    setLoading(false);
+
+    if (!res.success) {
+      Alert.alert(
+        "Error",
+        res.error || "Failed to save address. Please try again.",
+      );
       return;
     }
 
@@ -87,7 +113,7 @@ export default function AddressScreen() {
       </ScrollView>
 
       <TouchableOpacity activeOpacity={1} style={styles.actions}>
-        <Button label="Continue" onPress={handleContinue} />
+        <Button label="Continue" onPress={handleContinue} loading={loading} />
         <Button
           label="Save and exit"
           variant="ghost"

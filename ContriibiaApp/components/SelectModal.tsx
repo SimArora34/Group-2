@@ -86,6 +86,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: "70%",
     paddingBottom: 24,
+    overflow: "hidden",
   },
   handle: {
     width: 36,
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
   },
-  list: { flexGrow: 0 },
+  list: { flexGrow: 1, flexShrink: 1 },
   option: {
     flexDirection: "row",
     alignItems: "center",
