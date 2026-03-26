@@ -1,18 +1,37 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { getCurrentProfile } from '../../src/services/profileService';
+import { getWallet } from '../../src/services/walletService';
 
 type WalletProvider = 'apple' | 'google' | null;
 
-function VirtualCard({ business }: { business?: boolean }) {
+function VirtualCard({
+  business,
+  name,
+  balance,
+  balanceVisible,
+  onToggleBalance,
+}: {
+  business?: boolean;
+  name: string;
+  balance: number | null;
+  balanceVisible: boolean;
+  onToggleBalance: () => void;
+}) {
+  const formattedBalance =
+    balance !== null
+      ? `$${balance.toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : '—';
+
   return (
     <View style={[styles.card, business && styles.cardBusiness]}>
       <View style={styles.cardTop}>
         <View style={styles.cardLockRow}>
           <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.7)" />
-          <Text style={styles.cardTopText}>•••• •••• •••• 9018</Text>
+          <Text style={styles.cardTopText}>•••• •••• •••• ••••</Text>
         </View>
         {business && (
           <View style={styles.businessBadge}>
@@ -20,14 +39,22 @@ function VirtualCard({ business }: { business?: boolean }) {
           </View>
         )}
       </View>
-      <Text style={styles.cardName}>{business ? 'BUSINESS ACCOUNT' : 'HITARTH PATEL'}</Text>
-      <Text style={styles.cardExpiry}>EXPIRES: MM/YY  CVV</Text>
+      <Text style={styles.cardName}>{name || '—'}</Text>
+      <Text style={styles.cardExpiry}>CONTRIBIIA WALLET</Text>
       <View style={styles.cardBalanceRow}>
         <View>
           <Text style={styles.cardBalanceLabel}>Current Balance</Text>
-          <Text style={styles.cardBalanceAmt}>$X,XXX</Text>
+          <Text style={styles.cardBalanceAmt}>
+            {balanceVisible ? formattedBalance : '••••••'}
+          </Text>
         </View>
-        <Ionicons name="eye-off-outline" size={20} color="rgba(255,255,255,0.7)" />
+        <TouchableOpacity onPress={onToggleBalance}>
+          <Ionicons
+            name={balanceVisible ? 'eye-outline' : 'eye-off-outline'}
+            size={20}
+            color="rgba(255,255,255,0.7)"
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -35,12 +62,29 @@ function VirtualCard({ business }: { business?: boolean }) {
 
 export default function TapToPayScreen() {
   const [provider, setProvider] = useState<WalletProvider>(null);
+  const [name, setName] = useState('');
+  const [balance, setBalance] = useState<number | null>(null);
+  const [balanceVisible, setBalanceVisible] = useState(false);
+
+  useEffect(() => {
+    getCurrentProfile().then((res) => {
+      if (res.success && res.data) setName((res.data.full_name ?? '').toUpperCase());
+    });
+    getWallet().then((res) => {
+      if (res.success && res.data) setBalance(res.data.balance);
+    });
+  }, []);
 
   if (provider) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.scroll}>
-          <VirtualCard />
+          <VirtualCard
+            name={name}
+            balance={balance}
+            balanceVisible={balanceVisible}
+            onToggleBalance={() => setBalanceVisible((v) => !v)}
+          />
 
           <View style={styles.nfcWrap}>
             <View style={styles.nfcCircle}>
@@ -70,7 +114,12 @@ export default function TapToPayScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <VirtualCard />
+        <VirtualCard
+          name={name}
+          balance={balance}
+          balanceVisible={balanceVisible}
+          onToggleBalance={() => setBalanceVisible((v) => !v)}
+        />
 
         <TouchableOpacity
           style={styles.walletBtn}
