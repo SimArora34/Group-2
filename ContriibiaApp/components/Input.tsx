@@ -14,6 +14,7 @@ interface InputProps {
   required?: boolean;
   containerStyle?: ViewStyle;
   multiline?: boolean;
+  error?: string;
 }
 
 export default function Input({
@@ -28,6 +29,7 @@ export default function Input({
   required,
   containerStyle,
   multiline,
+  error,
 }: InputProps) {
   const [visible, setVisible] = useState(false);
 
@@ -39,7 +41,7 @@ export default function Input({
           {required && <Text style={styles.required}> *</Text>}
         </Text>
       )}
-      <View style={[styles.inputWrap, !editable && styles.inputDisabled]}>
+      <View style={[styles.inputWrap, !editable && styles.inputDisabled, !!error && styles.inputError]}>
         <TextInput
           style={[styles.input, multiline && styles.multiline]}
           placeholder={placeholder || 'Text example'}
@@ -58,6 +60,7 @@ export default function Input({
           </TouchableOpacity>
         )}
       </View>
+      {!!error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 }
@@ -87,6 +90,14 @@ const styles = StyleSheet.create({
   },
   inputDisabled: {
     backgroundColor: Colors.surface,
+  },
+  inputError: {
+    borderColor: Colors.error,
+  },
+  errorText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: Colors.error,
   },
   input: {
     flex: 1,

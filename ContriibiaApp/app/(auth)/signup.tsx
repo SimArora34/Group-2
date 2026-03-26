@@ -1,12 +1,22 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
 import { signUp } from '@/src/services/authService';
+
+type FormErrors = {
+  name?: string;
+  username?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+  confirmPassword?: string;
+  general?: string;
+};
 
 export default function SignupScreen() {
   const [form, setForm] = useState({
@@ -17,43 +27,58 @@ export default function SignupScreen() {
     password: '',
     confirmPassword: '',
   });
+  const [errors, setErrors] = useState<FormErrors>({});
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const set = (key: keyof typeof form) => (val: string) =>
+  const set = (key: keyof typeof form) => (val: string) => {
     setForm((prev) => ({ ...prev, [key]: val }));
+    setErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
 
   const handleCreate = async () => {
-    const { name, email, password, confirmPassword } = form;
+    const { name, username, email, phone, password, confirmPassword } = form;
+    const newErrors: FormErrors = {};
 
-    if (!form.name || !form.username || !email || !form.phone || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return;
-    }
+    if (!name) newErrors.name = 'Name is required';
+    if (!username) newErrors.username = 'Username is required';
+    if (!email) newErrors.email = 'Email is required';
+    if (!phone) newErrors.phone = 'Phone number is required';
+    if (!password) newErrors.password = 'Password is required';
+    if (!confirmPassword) newErrors.confirmPassword = 'Please confirm your password';
 
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
+    if (password && confirmPassword && password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     if (!agreed) {
-      Alert.alert('Error', 'Please agree to the Terms & Conditions');
+      newErrors.general = 'You must agree to the Terms & Conditions';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
+    setErrors({});
     setLoading(true);
 
-    const result = await signUp(email.trim(), password, name.trim(), form.username.trim(), form.phone.trim());
+    try {
+      const result = await signUp(email.trim(), password, name.trim(), username.trim(), phone.trim());
 
-    setLoading(false);
+      setLoading(false);
 
-    if (!result.success) {
-      Alert.alert('Signup Failed', result.error || 'Something went wrong');
-      return;
+      if (!result.success) {
+        setErrors({ general: result.error || 'Something went wrong' });
+        return;
+      }
+
+      router.replace('/(verification)/setup-overview');
+    } catch (e) {
+      setLoading(false);
+      console.error('Signup error:', e);
+      setErrors({ general: 'An unexpected error occurred. Please try again.' });
     }
-
-    Alert.alert('Success', 'Account created successfully');
-    router.replace('/(verification)/setup-overview');
   };
 
   return (
@@ -65,8 +90,14 @@ export default function SignupScreen() {
 
         <Text style={styles.heading}>Create account</Text>
 
-        <Input label="Name" placeholder="Saver Smith" value={form.name} onChangeText={set('name')} required />
-        <Input label="Username" placeholder="Saver Smith" value={form.username} onChangeText={set('username')} required />
+        {!!errors.general && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>{errors.general}</Text>
+          </View>
+        )}
+
+        <Input label="Name" placeholder="Saver Smith" value={form.name} onChangeText={set('name')} required error={errors.name} />
+        <Input label="Username" placeholder="saversmith" value={form.username} onChangeText={set('username')} required error={errors.username} />
         <Input
           label="Email address"
           placeholder="saver@contribiia.com"
@@ -75,6 +106,7 @@ export default function SignupScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           required
+          error={errors.email}
         />
         <Input
           label="Phone number"
@@ -83,6 +115,7 @@ export default function SignupScreen() {
           onChangeText={set('phone')}
           keyboardType="phone-pad"
           required
+          error={errors.phone}
         />
         <Input
           label="Password"
@@ -91,6 +124,7 @@ export default function SignupScreen() {
           onChangeText={set('password')}
           secureTextEntry
           required
+          error={errors.password}
         />
         <Input
           label="Confirm password"
@@ -99,6 +133,7 @@ export default function SignupScreen() {
           onChangeText={set('confirmPassword')}
           secureTextEntry
           required
+          error={errors.confirmPassword}
         />
 
         <View style={styles.checkRow}>
@@ -120,7 +155,6 @@ export default function SignupScreen() {
           label="Create Account"
           onPress={handleCreate}
           loading={loading}
-          disabled={!agreed}
           style={styles.ctaButton}
         />
 
@@ -155,6 +189,17 @@ const styles = StyleSheet.create({
     color: Colors.textDark,
     marginBottom: 20,
     textAlign: 'center',
+  },
+  errorBanner: {
+    backgroundColor: '#FEE2E2',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  errorBannerText: {
+    color: '#DC2626',
+    fontSize: 14,
   },
   checkRow: {
     flexDirection: 'row',
