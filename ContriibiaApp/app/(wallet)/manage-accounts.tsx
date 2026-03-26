@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   Modal,
   ScrollView,
@@ -10,27 +11,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
-
-type AccountType = 'SAVINGS' | 'CURRENT';
-
-type BankAccount = {
-  id: string;
-  acNo: string;
-  bankName: string;
-  type: AccountType;
-};
-
-const INITIAL_ACCOUNTS: BankAccount[] = [
-  { id: '1', acNo: '1240984', bankName: 'ScotiaBank', type: 'SAVINGS' },
-  { id: '2', acNo: '1243435', bankName: 'ScotiaBank', type: 'CURRENT' },
-];
+import { deleteBankAccount, getBankAccounts } from '../../src/services/bankAccountService';
+import { BankAccount } from '../../src/types';
 
 export default function ManageAccountsScreen() {
-  const [accounts, setAccounts] = useState<BankAccount[]>(INITIAL_ACCOUNTS);
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
-  const confirmDelete = () => {
+  useFocusEffect(
+    useCallback(() => {
+      getBankAccounts().then((res) => {
+        if (res.success && res.data) setAccounts(res.data);
+      });
+    }, []),
+  );
+
+  const confirmDelete = async () => {
     if (deleteTargetId) {
+      await deleteBankAccount(deleteTargetId);
       setAccounts((prev) => prev.filter((a) => a.id !== deleteTargetId));
     }
     setDeleteTargetId(null);
@@ -50,19 +48,19 @@ export default function ManageAccountsScreen() {
         {accounts.map((account) => (
           <View key={account.id} style={styles.accountRow}>
             <View style={styles.accountInfo}>
-              <Text style={styles.accountAcNo}>AC No: {account.acNo}</Text>
-              <Text style={styles.accountBank}>Bank: {account.bankName}</Text>
+              <Text style={styles.accountAcNo}>AC No: {account.account_number}</Text>
+              <Text style={styles.accountBank}>Bank: {account.bank_name}</Text>
             </View>
             <View style={styles.accountRight}>
               <View style={[
                 styles.typeBadge,
-                account.type === 'SAVINGS' ? styles.typeSavings : styles.typeCurrent,
+                account.account_type === 'SAVINGS' ? styles.typeSavings : styles.typeCurrent,
               ]}>
                 <Text style={[
                   styles.typeBadgeText,
-                  account.type === 'SAVINGS' ? styles.typeSavingsText : styles.typeCurrentText,
+                  account.account_type === 'SAVINGS' ? styles.typeSavingsText : styles.typeCurrentText,
                 ]}>
-                  {account.type}
+                  {account.account_type}
                 </Text>
               </View>
               <TouchableOpacity
