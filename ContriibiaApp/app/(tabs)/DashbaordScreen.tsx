@@ -1,14 +1,14 @@
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Alert,
-    Animated,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import AppIcon from "../../components/AppIcon";
 import ClubCard from "../../components/ClubCard";
@@ -17,12 +17,6 @@ import { Colors } from "../../constants/Colors";
 import { getCurrentUserCircles } from "../../src/services/circleService";
 import { getCurrentProfile } from "../../src/services/profileService";
 import { Circle } from "../../src/types";
-
-type Club = {
-  name: string;
-  amount: string;
-  status: string;
-};
 
 type ActionButtonProps = {
   label: string;
@@ -51,6 +45,49 @@ function ActionButton({ label, outline = false, onPress }: ActionButtonProps) {
         {label}
       </Text>
     </TouchableOpacity>
+  );
+}
+
+function CollapsibleSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(true);
+  const rotateAnim = useRef(new Animated.Value(1)).current;
+
+  const toggle = () => {
+    Animated.timing(rotateAnim, {
+      toValue: open ? 0 : 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+    setOpen((v) => !v);
+  };
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["180deg", "0deg"],
+  });
+
+  return (
+    <View style={styles.sectionBlock}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.section}>{title}</Text>
+        <TouchableOpacity
+          onPress={toggle}
+          style={styles.chevronBtn}
+          activeOpacity={0.8}
+        >
+          <Animated.View style={{ transform: [{ rotate }] }}>
+            <AppIcon name="keyboard-arrow-up" size={20} color={Colors.white} />
+          </Animated.View>
+        </TouchableOpacity>
+      </View>
+      {open && <View style={styles.sectionCard}>{children}</View>}
+    </View>
   );
 }
 
@@ -160,18 +197,23 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          {!!circles.length && (
-            <View style={styles.sectionBlock}>
-              <Text style={styles.section}>My Savings Clubs</Text>
-              {circles.map((circle) => (
-                <ClubCard
-                  key={circle.id}
-                  name={circle.name}
-                  amount={`$${circle.contribution_amount.toLocaleString()} CAD`}
-                  status="Active"
-                />
-              ))}
-            </View>
+          {hasClubs && (
+            <>
+              <CollapsibleSection title="Private Clubs">
+                {circles.map((circle) => (
+                  <ClubCard
+                    key={circle.id}
+                    name={circle.name}
+                    amount={`$${circle.contribution_amount.toLocaleString()} CAD`}
+                    status="Active"
+                  />
+                ))}
+              </CollapsibleSection>
+
+              <CollapsibleSection title="Public Clubs">
+                <Text style={styles.emptySection}>No public clubs yet.</Text>
+              </CollapsibleSection>
+            </>
           )}
         </ScrollView>
 
@@ -225,14 +267,14 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "800",
     color: Colors.textDark,
     marginBottom: 20,
   },
   emptyState: {
     backgroundColor: Colors.white,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 20,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -251,13 +293,39 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionBlock: {
-    marginBottom: 22,
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
   },
   section: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: Colors.textDark,
-    marginBottom: 12,
+  },
+  chevronBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#2F9AA5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sectionCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
+  },
+  emptySection: {
+    fontSize: 13,
+    color: Colors.textMid,
+    padding: 14,
+    textAlign: "center",
   },
   actionButton: {
     minHeight: 48,
