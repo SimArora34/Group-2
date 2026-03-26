@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -11,37 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
-
-type Card = {
-  id: string;
-  holderName: string;
-  last4: string;
-  expiry: string;
-  balance: string;
-  type: 'personal' | 'business';
-  bankName?: string;
-};
-
-const INITIAL_CARDS: Card[] = [
-  {
-    id: '1',
-    holderName: 'Jhon Lewis',
-    last4: '4567',
-    expiry: '10/28',
-    balance: '543,200.00',
-    type: 'personal',
-    bankName: 'ADRBank',
-  },
-  {
-    id: '2',
-    holderName: 'Hillery Nevelin',
-    last4: '0329',
-    expiry: '10/28',
-    balance: '543,200.00',
-    type: 'business',
-    bankName: 'ADRBank',
-  },
-];
+import { deleteCard, getCards } from '../../src/services/cardService';
+import { Card } from '../../src/types';
 
 const CARD_GRADIENTS = ['#A855F7', '#EC4899', '#6366F1'];
 const CARD_BGRADS = ['#F59E0B', '#EA580C', '#16A34A'];
@@ -66,7 +37,7 @@ function CardItem({
     <View style={[styles.cardItem, { backgroundColor: bg }]}>
       <View style={styles.cardItemTop}>
         <View>
-          <Text style={styles.cardItemHolder}>Card holder  {card.holderName}</Text>
+          <Text style={styles.cardItemHolder}>Card holder  {card.holder_name}</Text>
           <Text style={styles.cardItemNumber}>•••• •••• •••• {card.last4}</Text>
         </View>
         <TouchableOpacity onPress={() => setMenuOpen((v) => !v)} style={styles.menuBtn}>
@@ -74,14 +45,12 @@ function CardItem({
         </TouchableOpacity>
       </View>
 
-      <View style={styles.cardItemBottom}>
-        <Text style={styles.cardItemBalance}>$ {card.balance} USD</Text>
-      </View>
+      <View style={styles.cardItemBottom} />
 
       <View style={styles.cardItemFooter}>
         <View>
           <Text style={styles.cardItemFooterLabel}>Cardholder Name</Text>
-          <Text style={styles.cardItemFooterVal}>{card.holderName.toUpperCase()}</Text>
+          <Text style={styles.cardItemFooterVal}>{card.holder_name.toUpperCase()}</Text>
         </View>
         <View>
           <Text style={styles.cardItemFooterLabel}>Expired Date</Text>
@@ -113,7 +82,15 @@ function CardItem({
 }
 
 export default function ViewMyCardsScreen() {
-  const [cards, setCards] = useState<Card[]>(INITIAL_CARDS);
+  const [cards, setCards] = useState<Card[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      getCards().then((res) => {
+        if (res.success && res.data) setCards(res.data);
+      });
+    }, []),
+  );
 
   const handleDelete = (id: string) => {
     Alert.alert(
@@ -124,7 +101,10 @@ export default function ViewMyCardsScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => setCards((prev) => prev.filter((c) => c.id !== id)),
+          onPress: async () => {
+            await deleteCard(id);
+            setCards((prev) => prev.filter((c) => c.id !== id));
+          },
         },
       ],
     );
@@ -156,7 +136,7 @@ export default function ViewMyCardsScreen() {
                 pathname: '/(wallet)/add-new-card' as any,
                 params: {
                   editId: card.id,
-                  editName: card.holderName,
+                  editName: card.holder_name,
                   editExpiry: card.expiry,
                 },
               })

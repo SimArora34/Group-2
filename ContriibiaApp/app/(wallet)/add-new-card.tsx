@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -13,11 +13,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
+import { addCard, updateCard } from '../../src/services/cardService';
 
 export default function AddNewCardScreen() {
+  const { editId, editName, editExpiry } = useLocalSearchParams<{
+    editId?: string;
+    editName?: string;
+    editExpiry?: string;
+  }>();
+  const isEditing = !!editId;
+
   const [cardNumber, setCardNumber] = useState('');
-  const [nameOnCard, setNameOnCard] = useState('');
-  const [expiry, setExpiry] = useState('');
+  const [nameOnCard, setNameOnCard] = useState(editName ?? '');
+  const [expiry, setExpiry] = useState(editExpiry ?? '');
   const [cvv, setCvv] = useState('');
   const [address1, setAddress1] = useState('');
   const [address2, setAddress2] = useState('');
@@ -42,19 +50,44 @@ export default function AddNewCardScreen() {
   };
 
   const handleSave = async () => {
-    if (!cardNumber.trim() || !nameOnCard.trim() || !expiry.trim() || !cvv.trim()) {
+    if (!isEditing && (!cardNumber.trim() || !cvv.trim())) {
       setError('Please fill in all card details.');
       return;
     }
-    if (!address1.trim() || !city.trim() || !province.trim() || !country.trim()) {
+    if (!nameOnCard.trim() || !expiry.trim()) {
+      setError('Please fill in all card details.');
+      return;
+    }
+    if (!isEditing && (!address1.trim() || !city.trim() || !province.trim() || !country.trim())) {
       setError('Please fill in all billing address fields.');
       return;
     }
     setError('');
     setLoading(true);
-    // TODO: save card via payment provider (Stripe/Plaid)
-    await new Promise((r) => setTimeout(r, 800));
+
+    let res;
+    if (isEditing) {
+      res = await updateCard(editId!, { holder_name: nameOnCard.trim(), expiry: expiry.trim() });
+    } else {
+      const last4 = cardNumber.replace(/\s/g, '').slice(-4);
+      res = await addCard({
+        holder_name: nameOnCard.trim(),
+        last4,
+        expiry: expiry.trim(),
+        type: 'personal',
+        billing_address_1: address1.trim(),
+        billing_address_2: address2.trim() || undefined,
+        billing_city: city.trim(),
+        billing_province: province.trim(),
+        billing_country: country.trim(),
+      });
+    }
+
     setLoading(false);
+    if (!res.success) {
+      setError(res.error || 'Failed to save card.');
+      return;
+    }
     setSuccess(true);
   };
 
