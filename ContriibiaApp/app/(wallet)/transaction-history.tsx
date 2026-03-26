@@ -75,12 +75,7 @@ export default function TransactionHistoryScreen() {
   useEffect(() => {
     getTransactions().then((res) => {
       if (res.success && res.data) {
-        const enriched = (res.data as Tx[]).map((tx) => ({
-          ...tx,
-          from: tx.type === 'deposit' ? 'VISA **** 9408' : 'App Wallet',
-          to: tx.type === 'withdraw' ? 'AC No: 1240984\nBank: ScotiaBank' : 'App Wallet',
-        }));
-        setAllTx(enriched);
+        setAllTx(res.data as Tx[]);
       }
       setLoading(false);
     });
