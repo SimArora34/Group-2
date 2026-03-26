@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import { Clipboard, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
@@ -40,7 +40,7 @@ export default function ConfirmationScreen() {
         </View>
 
         <View style={styles.successIcon}>
-          <Ionicons name="checkmark" size={44} color={Colors.white} />
+          <AppIcon name="checkmark" size={44} color={Colors.white} />
         </View>
 
         <Text style={styles.successTitle}>Successful!</Text>
@@ -51,7 +51,7 @@ export default function ConfirmationScreen() {
             <View style={styles.txRow}>
               <Text style={styles.detailVal}>{txId}</Text>
               <TouchableOpacity onPress={handleCopyTxId} style={styles.copyBtn}>
-                <Ionicons name="copy-outline" size={16} color={Colors.primary} />
+                <AppIcon name="copy-outline" size={16} color={Colors.primary} />
               </TouchableOpacity>
             </View>
           </View>

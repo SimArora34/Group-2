@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -50,7 +50,7 @@ export default function SetupAutoLoadScreen() {
             <Text style={styles.bannerText}>Auto-Load Activated!</Text>
           </View>
           <View style={styles.successIcon}>
-            <Ionicons name="checkmark" size={44} color={Colors.white} />
+            <AppIcon name="checkmark" size={44} color={Colors.white} />
           </View>
           <Text style={styles.congratsTitle}>Congratulations!</Text>
           <Text style={styles.congratsDesc}>
@@ -105,12 +105,12 @@ export default function SetupAutoLoadScreen() {
 
           <TouchableOpacity style={styles.payOption}>
             <Text style={styles.payOptionText}>Credit / Debit Card</Text>
-            <Ionicons name="chevron-down" size={18} color={Colors.white} />
+            <AppIcon name="chevron-down" size={18} color={Colors.white} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.payOption}>
             <Text style={styles.payOptionText}>Bank Account Details</Text>
-            <Ionicons name="chevron-down" size={18} color={Colors.white} />
+            <AppIcon name="chevron-down" size={18} color={Colors.white} />
           </TouchableOpacity>
 
           <TouchableOpacity

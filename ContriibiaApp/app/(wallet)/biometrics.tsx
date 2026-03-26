@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
@@ -32,7 +32,7 @@ export default function BiometricsScreen() {
               <View style={styles.faceCornerTR} />
               <View style={styles.faceCornerBL} />
               <View style={styles.faceCornerBR} />
-              <Ionicons name="happy-outline" size={80} color={Colors.primary} />
+              <AppIcon name="happy-outline" size={80} color={Colors.primary} />
             </View>
           ) : (
             <View style={styles.faceIllustration}>
@@ -40,7 +40,7 @@ export default function BiometricsScreen() {
               <View style={styles.faceCornerTR} />
               <View style={styles.faceCornerBL} />
               <View style={styles.faceCornerBR} />
-              <Ionicons name="finger-print" size={80} color={Colors.primary} />
+              <AppIcon name="finger-print" size={80} color={Colors.primary} />
             </View>
           )}
         </View>
@@ -67,14 +67,14 @@ export default function BiometricsScreen() {
             style={[styles.toggleBtn, type === 'face' && styles.toggleBtnActive]}
             onPress={() => setType('face')}
           >
-            <Ionicons name="happy-outline" size={20} color={type === 'face' ? Colors.white : Colors.primary} />
+            <AppIcon name="happy-outline" size={20} color={type === 'face' ? Colors.white : Colors.primary} />
             <Text style={[styles.toggleBtnText, type === 'face' && styles.toggleBtnTextActive]}>Face ID</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toggleBtn, type === 'fingerprint' && styles.toggleBtnActive]}
             onPress={() => setType('fingerprint')}
           >
-            <Ionicons name="finger-print" size={20} color={type === 'fingerprint' ? Colors.white : Colors.primary} />
+            <AppIcon name="finger-print" size={20} color={type === 'fingerprint' ? Colors.white : Colors.primary} />
             <Text style={[styles.toggleBtnText, type === 'fingerprint' && styles.toggleBtnTextActive]}>Fingerprint</Text>
           </TouchableOpacity>
         </View>

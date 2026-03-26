@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -9,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AppIcon from '../../components/AppIcon';
 import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
 import { getDefaultCard } from '@/src/services/cardService';
@@ -102,7 +102,7 @@ export default function WalletScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={Colors.textDark} />
+          <AppIcon name="chevron-back" size={24} color={Colors.textDark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>App Wallet</Text>
         <View style={styles.backBtn} />
@@ -167,7 +167,7 @@ export default function WalletScreen() {
                     </View>
                   )}
                 </View>
-                <Ionicons name="lock-closed" size={16} color="rgba(255,255,255,0.7)" />
+                <AppIcon name="lock-closed" size={16} color="rgba(255,255,255,0.7)" />
               </View>
 
               <Text style={styles.cardNumber}>
@@ -194,7 +194,7 @@ export default function WalletScreen() {
                   </Text>
                 </View>
                 <TouchableOpacity onPress={() => setBalanceVisible((v) => !v)}>
-                  <Ionicons
+                  <AppIcon
                     name={balanceVisible ? 'eye-off-outline' : 'eye-outline'}
                     size={22}
                     color="rgba(255,255,255,0.8)"
@@ -228,7 +228,7 @@ export default function WalletScreen() {
                   onPress={() => handleQuickAction(action.id)}
                 >
                   <View style={styles.gridIconWrap}>
-                    <Ionicons name={action.icon} size={26} color={Colors.primary} />
+                    <AppIcon name={action.icon} size={26} color={Colors.primary} />
                   </View>
                   <Text style={styles.gridLabel}>{action.label}</Text>
                 </TouchableOpacity>

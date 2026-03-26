@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import {
   FlatList,
   StyleSheet,
@@ -60,7 +60,7 @@ export default function InvoiceSendUserScreen() {
         <View style={styles.successWrap}>
           <View style={styles.banner}><Text style={styles.bannerText}>Invoice Sent</Text></View>
           <View style={styles.successIcon}>
-            <Ionicons name="checkmark" size={44} color={Colors.white} />
+            <AppIcon name="checkmark" size={44} color={Colors.white} />
           </View>
           <Text style={styles.congratsTitle}>Congratulations!</Text>
           <Text style={styles.congratsDesc}>
@@ -100,14 +100,14 @@ export default function InvoiceSendUserScreen() {
               onPress={() => setSelected(item.id)}
             >
               <View style={styles.avatar}>
-                <Ionicons name="person" size={20} color={Colors.primary} />
+                <AppIcon name="person" size={20} color={Colors.primary} />
               </View>
               <View style={styles.userInfo}>
                 <Text style={styles.userName}>{item.full_name ?? '—'}</Text>
                 <Text style={styles.userEmail}>{item.email ?? ''}</Text>
                 {item.username && <Text style={styles.userHandle}>@{item.username}</Text>}
               </View>
-              <Ionicons name="arrow-forward" size={18} color={Colors.primary} />
+              <AppIcon name="arrow-forward" size={18} color={Colors.primary} />
             </TouchableOpacity>
           )}
           style={styles.list}

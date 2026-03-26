@@ -1,13 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AppIcon from '../../components/AppIcon';
 import { Colors } from '../../constants/Colors';
 
 export default function ClubsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.body}>
-        <Text style={styles.emoji}>👥</Text>
+        <AppIcon name="groups" size={64} color={Colors.textLight} />
         <Text style={styles.title}>Savings Clubs</Text>
         <Text style={styles.subtitle}>
           Coming soon – browse and join savings clubs here.

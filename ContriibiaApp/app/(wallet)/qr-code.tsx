@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Clipboard, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import AppIcon from '../../components/AppIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { getCurrentProfile } from '@/src/services/profileService';
@@ -30,7 +30,7 @@ export default function QrCodeScreen() {
 
         {/* QR placeholder — install react-native-qrcode-svg for real QR generation */}
         <View style={styles.qrBox}>
-          <Ionicons name="qr-code" size={140} color={Colors.textDark} />
+          <AppIcon name="qr-code" size={140} color={Colors.textDark} />
         </View>
 
         <Text style={styles.shareLabel}>Share link:</Text>
@@ -47,7 +47,7 @@ export default function QrCodeScreen() {
         </View>
 
         <TouchableOpacity style={styles.shareBtn} onPress={handleShare} disabled={!email}>
-          <Ionicons name="share-outline" size={18} color={Colors.white} />
+          <AppIcon name="share-outline" size={18} color={Colors.white} />
           <Text style={styles.shareBtnText}>Share My Contribiia ID</Text>
         </TouchableOpacity>
       </View>

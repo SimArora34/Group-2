@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
@@ -9,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppIcon from '../../components/AppIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { deleteCard, getCards } from '../../src/services/cardService';
@@ -41,7 +41,7 @@ function CardItem({
           <Text style={styles.cardItemNumber}>•••• •••• •••• {card.last4}</Text>
         </View>
         <TouchableOpacity onPress={() => setMenuOpen((v) => !v)} style={styles.menuBtn}>
-          <Ionicons name="ellipsis-vertical" size={18} color={Colors.white} />
+          <AppIcon name="ellipsis-vertical" size={18} color={Colors.white} />
         </TouchableOpacity>
       </View>
 
@@ -64,7 +64,7 @@ function CardItem({
             style={styles.dropdownItem}
             onPress={() => { setMenuOpen(false); onEdit(); }}
           >
-            <Ionicons name="create-outline" size={16} color={Colors.textDark} />
+            <AppIcon name="create-outline" size={16} color={Colors.textDark} />
             <Text style={styles.dropdownText}>Edit Card</Text>
           </TouchableOpacity>
           <View style={styles.dropdownDivider} />
@@ -72,7 +72,7 @@ function CardItem({
             style={styles.dropdownItem}
             onPress={() => { setMenuOpen(false); onDelete(); }}
           >
-            <Ionicons name="trash-outline" size={16} color={Colors.error} />
+            <AppIcon name="trash-outline" size={16} color={Colors.error} />
             <Text style={[styles.dropdownText, { color: Colors.error }]}>Delete Card</Text>
           </TouchableOpacity>
         </View>
@@ -120,7 +120,7 @@ export default function ViewMyCardsScreen() {
         >
           <Text style={styles.addRowText}>Add a new card</Text>
           <View style={styles.addIcon}>
-            <Ionicons name="add" size={20} color={Colors.primary} />
+            <AppIcon name="add" size={20} color={Colors.primary} />
           </View>
         </TouchableOpacity>
 
@@ -147,7 +147,7 @@ export default function ViewMyCardsScreen() {
 
         {cards.length === 0 && (
           <View style={styles.emptyWrap}>
-            <Ionicons name="card-outline" size={48} color={Colors.textLight} />
+            <AppIcon name="card-outline" size={48} color={Colors.textLight} />
             <Text style={styles.emptyText}>No cards added yet</Text>
           </View>
         )}

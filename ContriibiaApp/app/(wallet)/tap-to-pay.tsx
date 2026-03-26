@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AppIcon from '../../components/AppIcon';
 import { Colors } from '../../constants/Colors';
 import { getCurrentProfile } from '../../src/services/profileService';
 import { getWallet } from '../../src/services/walletService';
@@ -30,7 +30,7 @@ function VirtualCard({
     <View style={[styles.card, business && styles.cardBusiness]}>
       <View style={styles.cardTop}>
         <View style={styles.cardLockRow}>
-          <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.7)" />
+          <AppIcon name="lock-closed" size={14} color="rgba(255,255,255,0.7)" />
           <Text style={styles.cardTopText}>•••• •••• •••• ••••</Text>
         </View>
         {business && (
@@ -49,7 +49,7 @@ function VirtualCard({
           </Text>
         </View>
         <TouchableOpacity onPress={onToggleBalance}>
-          <Ionicons
+          <AppIcon
             name={balanceVisible ? 'eye-outline' : 'eye-off-outline'}
             size={20}
             color="rgba(255,255,255,0.7)"
@@ -88,7 +88,7 @@ export default function TapToPayScreen() {
 
           <View style={styles.nfcWrap}>
             <View style={styles.nfcCircle}>
-              <Ionicons name="phone-portrait-outline" size={44} color={Colors.primary} />
+              <AppIcon name="phone-portrait-outline" size={44} color={Colors.primary} />
               <View style={styles.nfcRing1} />
               <View style={styles.nfcRing2} />
             </View>
@@ -125,7 +125,7 @@ export default function TapToPayScreen() {
           style={styles.walletBtn}
           onPress={() => setProvider('apple')}
         >
-          <Ionicons name="logo-apple" size={22} color={Colors.textDark} />
+          <AppIcon name="logo-apple" size={22} color={Colors.textDark} />
           <Text style={styles.walletBtnText}>Setup with Apple Wallet</Text>
         </TouchableOpacity>
 

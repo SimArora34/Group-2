@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon';
 import { router } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -23,13 +24,13 @@ export default function ScreenHeader({ title, showIcons = true, onBack }: Screen
     <SafeAreaView edges={['top']} style={styles.safe}>
       <View style={styles.container}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={styles.backArrow}>‹</Text>
+          <AppIcon name="arrow-back" size={24} color={Colors.textDark} />
         </TouchableOpacity>
         <Text style={styles.title}>{title}</Text>
         {showIcons ? (
           <View style={styles.icons}>
-            <Text style={styles.icon}>🙂</Text>
-            <Text style={styles.icon}>🔔</Text>
+            <AppIcon name="account-circle" size={22} color={Colors.textDark} />
+            <AppIcon name="notifications-none" size={22} color={Colors.textDark} />
           </View>
         ) : (
           <View style={styles.placeholder} />
@@ -53,13 +54,9 @@ const styles = StyleSheet.create({
   },
   backButton: {
     width: 32,
+    height: 32,
     alignItems: 'center',
-  },
-  backArrow: {
-    fontSize: 30,
-    color: Colors.textDark,
-    lineHeight: 32,
-    marginTop: -4,
+    justifyContent: 'center',
   },
   title: {
     flex: 1,
@@ -72,10 +69,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  icon: {
-    fontSize: 20,
-  },
   placeholder: {
-    width: 40,
+    width: 52,
   },
 });

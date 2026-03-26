@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -99,7 +99,7 @@ export default function AddNewCardScreen() {
             <Text style={styles.bannerText}>New Card Added!</Text>
           </View>
           <View style={styles.successIcon}>
-            <Ionicons name="checkmark" size={44} color={Colors.white} />
+            <AppIcon name="checkmark" size={44} color={Colors.white} />
           </View>
           <Text style={styles.congratsTitle}>Congratulations!</Text>
           <Text style={styles.congratsDesc}>

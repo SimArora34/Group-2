@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -76,7 +76,7 @@ export default function SendMoneyScreen() {
             />
             {!!amount && (
               <TouchableOpacity style={styles.clearBtn} onPress={handleClearAmount}>
-                <Ionicons name="close-circle" size={20} color={Colors.primary} />
+                <AppIcon name="close-circle" size={20} color={Colors.primary} />
               </TouchableOpacity>
             )}
           </View>

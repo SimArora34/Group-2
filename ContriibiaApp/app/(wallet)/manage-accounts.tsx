@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import {
   Modal,
   ScrollView,
@@ -41,7 +41,7 @@ export default function ManageAccountsScreen() {
         <TouchableOpacity style={styles.linkRow}>
           <Text style={styles.linkRowText}>Link a New Account</Text>
           <View style={styles.addIcon}>
-            <Ionicons name="add" size={20} color={Colors.primary} />
+            <AppIcon name="add" size={20} color={Colors.primary} />
           </View>
         </TouchableOpacity>
 
@@ -67,7 +67,7 @@ export default function ManageAccountsScreen() {
                 style={styles.deleteBtn}
                 onPress={() => setDeleteTargetId(account.id)}
               >
-                <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                <AppIcon name="trash-outline" size={20} color={Colors.error} />
               </TouchableOpacity>
             </View>
           </View>
@@ -75,7 +75,7 @@ export default function ManageAccountsScreen() {
 
         {accounts.length === 0 && (
           <View style={styles.emptyWrap}>
-            <Ionicons name="business-outline" size={48} color={Colors.textLight} />
+            <AppIcon name="business-outline" size={48} color={Colors.textLight} />
             <Text style={styles.emptyText}>No bank accounts linked</Text>
           </View>
         )}
@@ -95,7 +95,7 @@ export default function ManageAccountsScreen() {
               style={styles.modalClose}
               onPress={() => setDeleteTargetId(null)}
             >
-              <Ionicons name="close" size={20} color={Colors.textMid} />
+              <AppIcon name="close" size={20} color={Colors.textMid} />
             </TouchableOpacity>
 
             <Text style={styles.modalTitle}>Confirm Delete</Text>

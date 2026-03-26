@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AppIcon from '../../components/AppIcon';
 import { Colors } from '../../constants/Colors';
 
 type WalletTab = 'personal' | 'business';
@@ -15,7 +15,7 @@ function MenuItem({ label, onPress, icon }: { label: string; onPress: () => void
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <Text style={styles.menuItemText}>{label}</Text>
-      <Ionicons name={(icon as any) ?? 'arrow-forward'} size={18} color={Colors.primary} />
+      <AppIcon name={icon ?? 'arrow-forward'} size={18} color={Colors.primary} />
     </TouchableOpacity>
   );
 }

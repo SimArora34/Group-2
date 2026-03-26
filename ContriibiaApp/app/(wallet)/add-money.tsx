@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -87,12 +87,12 @@ export default function AddMoneyScreen() {
 
           <TouchableOpacity style={styles.payOption}>
             <Text style={styles.payOptionText}>Credit / Debit Card</Text>
-            <Ionicons name="chevron-down" size={18} color={Colors.white} />
+            <AppIcon name="chevron-down" size={18} color={Colors.white} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.payOption}>
             <Text style={styles.payOptionText}>Bank Account Details</Text>
-            <Ionicons name="chevron-down" size={18} color={Colors.white} />
+            <AppIcon name="chevron-down" size={18} color={Colors.white} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.autoLoadBtn} onPress={() => router.push('/(wallet)/setup-auto-load' as any)}>

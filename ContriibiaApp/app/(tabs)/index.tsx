@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AppIcon from '../../components/AppIcon';
 import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
 import { getWallet, getTransactions } from '@/src/services/walletService';
 import { getCurrentProfile } from '@/src/services/profileService';
 
 const QUICK_ACTIONS = [
-  { icon: '➕', label: 'Join Club' },
-  { icon: '💸', label: 'Send' },
-  { icon: '📥', label: 'Receive' },
-  { icon: '📊', label: 'History' },
+  { icon: 'group-add', label: 'Join Club' },
+  { icon: 'send', label: 'Send' },
+  { icon: 'download', label: 'Receive' },
+  { icon: 'receipt-long', label: 'History' },
 ];
 
 type Tx = {
@@ -84,7 +85,7 @@ export default function HomeScreen() {
           {QUICK_ACTIONS.map((action) => (
             <TouchableOpacity key={action.label} style={styles.quickAction}>
               <View style={styles.quickActionIcon}>
-                <Text style={styles.quickActionEmoji}>{action.icon}</Text>
+                <AppIcon name={action.icon} size={22} color={Colors.primary} />
               </View>
               <Text style={styles.quickActionLabel}>{action.label}</Text>
             </TouchableOpacity>
@@ -114,7 +115,7 @@ export default function HomeScreen() {
 
         {recentTransactions.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>💰</Text>
+            <AppIcon name="account-balance-wallet" size={48} color={Colors.textLight} />
             <Text style={styles.emptyTitle}>No transactions yet</Text>
             <Text style={styles.emptyDesc}>
               Your recent wallet activity will appear here.
@@ -141,7 +142,7 @@ export default function HomeScreen() {
         <Text style={styles.sectionTitle}>Your Savings Clubs</Text>
 
         <View style={styles.emptyState}>
-          <Text style={styles.emptyEmoji}>👥</Text>
+          <AppIcon name="groups" size={48} color={Colors.textLight} />
           <Text style={styles.emptyTitle}>No clubs yet</Text>
           <Text style={styles.emptyDesc}>
             Join or create a savings club to get started.

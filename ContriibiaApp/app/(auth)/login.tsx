@@ -1,21 +1,28 @@
-import { router } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Button from '../../components/Button';
-import Input from '../../components/Input';
-import Logo from '../../components/Logo';
-import { Colors } from '../../constants/Colors';
-import { signIn } from '@/src/services/authService';
+import { signIn } from "@/src/services/authService";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import {
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Button from "../../components/Button";
+import Input from "../../components/Input";
+import Logo from "../../components/Logo";
+import { Colors } from "../../constants/Colors";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
@@ -26,16 +33,19 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (!result.success) {
-      Alert.alert('Login Failed', result.error || 'Invalid email or password');
+      Alert.alert("Login Failed", result.error || "Invalid email or password");
       return;
     }
 
-    router.replace('/(tabs)');
+    router.replace("/(tabs)/DashbaordScreen");
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.logoRow}>
           <Logo size="large" showTagline />
         </View>
@@ -58,7 +68,9 @@ export default function LoginScreen() {
           secureTextEntry
         />
 
-        <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
+        <TouchableOpacity
+          onPress={() => router.push("/(auth)/forgot-password")}
+        >
           <Text style={styles.forgotLink}>Forgot password?</Text>
         </TouchableOpacity>
 
@@ -67,8 +79,11 @@ export default function LoginScreen() {
         <Button label="Login" onPress={handleLogin} loading={loading} />
 
         <Text style={styles.bottomText}>
-          Don't have an account?{' '}
-          <Text style={styles.link} onPress={() => router.replace('/(auth)/signup')}>
+          Don't have an account?{" "}
+          <Text
+            style={styles.link}
+            onPress={() => router.replace("/(auth)/signup")}
+          >
             Sign Up
           </Text>
         </Text>
@@ -87,16 +102,16 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   logoRow: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 32,
     marginTop: 8,
   },
   heading: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textDark,
     marginBottom: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   forgotLink: {
     color: Colors.accent,
@@ -109,13 +124,13 @@ const styles = StyleSheet.create({
     minHeight: 32,
   },
   bottomText: {
-    textAlign: 'center',
+    textAlign: "center",
     color: Colors.textMid,
     fontSize: 14,
     marginTop: 16,
   },
   link: {
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

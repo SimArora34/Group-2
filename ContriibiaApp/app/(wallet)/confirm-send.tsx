@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import {
   ActivityIndicator,
   Clipboard,
@@ -69,7 +69,7 @@ export default function ConfirmSendScreen() {
             <Text style={styles.bannerText}>Amount Sent!</Text>
           </View>
           <View style={styles.successIcon}>
-            <Ionicons name="checkmark" size={44} color={Colors.white} />
+            <AppIcon name="checkmark" size={44} color={Colors.white} />
           </View>
           <Text style={styles.successTitle}>Successful!</Text>
           <View style={styles.detailsCard}>
@@ -78,7 +78,7 @@ export default function ConfirmSendScreen() {
               <View style={styles.txRow}>
                 <Text style={styles.detailVal}>{txId}</Text>
                 <TouchableOpacity onPress={() => Clipboard.setString(txId)}>
-                  <Ionicons name="copy-outline" size={16} color={Colors.primary} />
+                  <AppIcon name="copy-outline" size={16} color={Colors.primary} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -90,7 +90,7 @@ export default function ConfirmSendScreen() {
             <Text style={styles.detailKeySmall}>To</Text>
             <View style={styles.recipientRow}>
               <View style={styles.avatar}>
-                <Ionicons name="person" size={20} color={Colors.primary} />
+                <AppIcon name="person" size={20} color={Colors.primary} />
               </View>
               <View>
                 <Text style={styles.detailKey}>{recipientInfo?.full_name || 'User'}</Text>
@@ -123,7 +123,7 @@ export default function ConfirmSendScreen() {
         <Text style={styles.fieldLabel}>Enter Amount</Text>
         <View style={styles.amountBox}>
           <Text style={styles.amountText}>${amount}</Text>
-          <Ionicons name="checkmark-circle" size={22} color={Colors.primary} />
+          <AppIcon name="checkmark-circle" size={22} color={Colors.primary} />
         </View>
 
         <View style={styles.txPreview}>
@@ -138,7 +138,7 @@ export default function ConfirmSendScreen() {
         ) : recipientInfo ? (
           <View style={styles.txFlow}>
             <Text style={styles.txYou}>You</Text>
-            <Ionicons name="arrow-forward" size={20} color={Colors.textMid} />
+            <AppIcon name="arrow-forward" size={20} color={Colors.textMid} />
             <View>
               <Text style={styles.txName}>{recipientInfo.full_name || 'User'}</Text>
               <Text style={styles.txEmail}>{recipientInfo.email}</Text>

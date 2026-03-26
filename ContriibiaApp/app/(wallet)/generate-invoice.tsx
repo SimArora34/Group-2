@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -59,7 +59,7 @@ export default function GenerateInvoiceScreen() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.previewTitle}>Invoice Preview</Text>
           <TouchableOpacity style={styles.downloadBtn}>
-            <Ionicons name="download-outline" size={20} color={Colors.primary} />
+            <AppIcon name="download-outline" size={20} color={Colors.primary} />
           </TouchableOpacity>
 
           <View style={styles.invoiceDoc}>
@@ -164,7 +164,7 @@ export default function GenerateInvoiceScreen() {
                   placeholderTextColor={Colors.textPlaceholder}
                 />
                 <TouchableOpacity style={styles.taxClear} onPress={() => setTaxPct('')}>
-                  <Ionicons name="close-circle" size={18} color={Colors.textLight} />
+                  <AppIcon name="close-circle" size={18} color={Colors.textLight} />
                 </TouchableOpacity>
               </View>
             </View>

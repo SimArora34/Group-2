@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
@@ -29,7 +29,7 @@ function VirtualCard({
     <View style={[styles.card, frozen && styles.cardFrozen, business && styles.cardBusiness]}>
       <View style={styles.cardTop}>
         <View style={styles.cardLockRow}>
-          <Ionicons name="lock-closed" size={14} color="rgba(255,255,255,0.7)" />
+          <AppIcon name="lock-closed" size={14} color="rgba(255,255,255,0.7)" />
           <Text style={styles.cardTopText}>•••• •••• •••• {card?.last4 ?? '••••'}</Text>
         </View>
         {business && (
@@ -47,7 +47,7 @@ function VirtualCard({
           <Text style={styles.cardBalanceLabel}>Current Balance</Text>
           <Text style={styles.cardBalanceAmt}>{formattedBalance}</Text>
         </View>
-        <Ionicons name="eye-off-outline" size={20} color="rgba(255,255,255,0.7)" />
+        <AppIcon name="eye-off-outline" size={20} color="rgba(255,255,255,0.7)" />
       </View>
     </View>
   );
@@ -88,7 +88,7 @@ export default function FreezeCardScreen() {
           <VirtualCard frozen card={card} balance={balance} />
 
           <View style={styles.checkCircle}>
-            <Ionicons name="checkmark" size={36} color={Colors.white} />
+            <AppIcon name="checkmark" size={36} color={Colors.white} />
           </View>
 
           <Text style={styles.successTitle}>Successful!</Text>
@@ -139,7 +139,7 @@ export default function FreezeCardScreen() {
           <VirtualCard card={card} balance={balance} />
 
           <View style={styles.checkCircle}>
-            <Ionicons name="checkmark" size={36} color={Colors.white} />
+            <AppIcon name="checkmark" size={36} color={Colors.white} />
           </View>
 
           <Text style={styles.successTitle}>Card Active!</Text>

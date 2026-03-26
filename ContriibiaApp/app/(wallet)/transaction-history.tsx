@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppIcon from '../../components/AppIcon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { getTransactions } from '@/src/services/walletService';
@@ -126,12 +126,12 @@ export default function TransactionHistoryScreen() {
       <View style={styles.toolbar}>
         <TouchableOpacity style={[styles.filterBtn, hasFilter && styles.filterBtnActive]} onPress={openFilter}>
           <Text style={[styles.filterBtnText, hasFilter && styles.filterBtnTextActive]}>Filter</Text>
-          <Ionicons name="filter" size={14} color={hasFilter ? Colors.white : Colors.textDark} />
+          <AppIcon name="filter" size={14} color={hasFilter ? Colors.white : Colors.textDark} />
         </TouchableOpacity>
         <View>
           <TouchableOpacity style={styles.sortBtn} onPress={() => setShowSortMenu((v) => !v)}>
             <Text style={styles.sortText}>Sort By: <Text style={styles.sortVal}>{sortBy}</Text></Text>
-            <Ionicons name="chevron-down" size={14} color={Colors.textDark} />
+            <AppIcon name="chevron-down" size={14} color={Colors.textDark} />
           </TouchableOpacity>
           {showSortMenu && (
             <View style={styles.sortMenu}>
@@ -155,7 +155,7 @@ export default function TransactionHistoryScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="receipt-outline" size={48} color={Colors.textLight} />
+              <AppIcon name="receipt-outline" size={48} color={Colors.textLight} />
               <Text style={styles.emptyTitle}>No transactions</Text>
               <Text style={styles.emptyDesc}>No transactions match the current filter.</Text>
             </View>
@@ -170,7 +170,7 @@ export default function TransactionHistoryScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter</Text>
               <TouchableOpacity onPress={() => setFilterVisible(false)}>
-                <Ionicons name="close" size={22} color={Colors.textDark} />
+                <AppIcon name="close" size={22} color={Colors.textDark} />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>

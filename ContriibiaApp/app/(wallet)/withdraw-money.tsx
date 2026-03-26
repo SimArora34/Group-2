@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
+import AppIcon from '../../components/AppIcon';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -67,12 +67,12 @@ export default function WithdrawMoneyScreen() {
 
           <TouchableOpacity style={styles.payOption}>
             <Text style={styles.payOptionText}>Credit / Debit Card</Text>
-            <Ionicons name="chevron-down" size={18} color={Colors.white} />
+            <AppIcon name="chevron-down" size={18} color={Colors.white} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.payOption}>
             <Text style={styles.payOptionText}>Bank Account Details</Text>
-            <Ionicons name="chevron-down" size={18} color={Colors.white} />
+            <AppIcon name="chevron-down" size={18} color={Colors.white} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -85,7 +85,7 @@ export default function WithdrawMoneyScreen() {
 
           <TouchableOpacity style={styles.etransferBtn} disabled={loading}>
             <View style={styles.etransferIcon}>
-              <Ionicons name="swap-horizontal" size={18} color="#F5A623" />
+              <AppIcon name="swap-horizontal" size={18} color="#F5A623" />
             </View>
             <Text style={styles.etransferBtnText}>Interac E-Transfer</Text>
           </TouchableOpacity>
