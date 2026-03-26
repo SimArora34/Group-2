@@ -43,7 +43,7 @@ export default function SignupScreen() {
 
     setLoading(true);
 
-    const result = await signUp(email.trim(), password, name.trim());
+    const result = await signUp(email.trim(), password, name.trim(), form.username.trim(), form.phone.trim());
 
     setLoading(false);
 
