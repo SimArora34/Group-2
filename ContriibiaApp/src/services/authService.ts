@@ -5,11 +5,19 @@ export async function signUp(
   email: string,
   password: string,
   fullName?: string,
+  username?: string,
+  phone?: string,
 ): Promise<ServiceResponse<{ email: string | null }>> {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName ?? "" } },
+    options: {
+      data: {
+        full_name: fullName ?? "",
+        username: username ?? "",
+        phone: phone ?? "",
+      },
+    },
   });
   if (error) return { success: false, error: error.message };
   return { success: true, data: { email: data.user?.email ?? null } };
