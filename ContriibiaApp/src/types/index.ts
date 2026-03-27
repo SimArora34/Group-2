@@ -59,11 +59,15 @@ export interface BankAccount {
   created_at: string;
 }
 
+export type CircleVisibility = "public" | "private";
+
 export interface Circle {
   id: UUID;
   name: string;
   owner_id: UUID;
   contribution_amount: number;
+  visibility: CircleVisibility;
+  total_members: number;
   created_at: string;
 }
 
@@ -94,4 +98,13 @@ export interface ServiceResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
+}
+export type CashAdvanceStatus = "pending" | "approved" | "rejected";
+
+export interface CashAdvanceRequest {
+  id: UUID;
+  user_id: UUID;
+  amount: number;
+  status: CashAdvanceStatus;
+  created_at: string;
 }

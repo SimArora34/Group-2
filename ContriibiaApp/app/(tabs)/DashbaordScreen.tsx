@@ -1,45 +1,48 @@
-import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useMemo, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Pressable,
+  ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import AppIcon from "../../components/AppIcon";
-import ClubCard from "../../components/ClubCard";
-import ScreenHeader from "../../components/ScreenHeader";
 import { Colors } from "../../constants/Colors";
-import { getCurrentUserCircles } from "../../src/services/circleService";
 import { getCurrentProfile } from "../../src/services/profileService";
+import {
+  getPublicCircles,
+  getUserCircles,
+} from "../../src/services/circleService";
 import { Circle } from "../../src/types";
 
-type ActionButtonProps = {
+type DashboardClubCardProps = {
+  club: Circle;
+  joined?: boolean;
+};
+
+function DashboardActionButton({
+  label,
+  outline = false,
+  onPress,
+}: {
   label: string;
   outline?: boolean;
   onPress: () => void;
-};
-
-function ActionButton({ label, outline = false, onPress }: ActionButtonProps) {
+}) {
   return (
     <TouchableOpacity
-      activeOpacity={0.85}
+      style={[styles.actionButton, outline && styles.actionButtonOutline]}
       onPress={onPress}
-      style={[
-        styles.actionButton,
-        outline ? styles.actionButtonOutline : styles.actionButtonFilled,
-      ]}
+      activeOpacity={0.85}
     >
       <Text
         style={[
           styles.actionButtonText,
-          outline
-            ? styles.actionButtonTextOutline
-            : styles.actionButtonTextFilled,
+          outline && styles.actionButtonOutlineText,
         ]}
       >
         {label}
@@ -48,339 +51,534 @@ function ActionButton({ label, outline = false, onPress }: ActionButtonProps) {
   );
 }
 
-function CollapsibleSection({
+function DashboardClubCard({
+  club,
+  joined = false,
+}: DashboardClubCardProps) {
+  return (
+    <View style={styles.clubCard}>
+      <View style={styles.clubCardTop}>
+        <View style={styles.clubInfoWrap}>
+          <Text style={styles.clubCardTitle} numberOfLines={1}>
+            {club.name}
+          </Text>
+          <Text style={styles.clubContributionLabel}>Contribution Amount</Text>
+        </View>
+
+        <View style={styles.clubRightWrap}>
+          <Text
+            style={[
+              styles.clubStatus,
+              joined ? styles.clubStatusJoined : styles.clubStatusPublic,
+            ]}
+          >
+            {joined ? "Active" : club.visibility === "private" ? "Private" : "Public"}
+          </Text>
+
+          <Text style={styles.clubContributionValue}>
+            ${Number(club.contribution_amount || 0).toFixed(0)} CAD
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.clubMetaRow}>
+        <Text style={styles.clubMetaText}>
+          Members: {club.total_members ?? 0}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function SectionHeader({
   title,
-  children,
+  expanded,
+  onToggle,
 }: {
   title: string;
-  children: React.ReactNode;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
-  const [open, setOpen] = useState(true);
-  const rotateAnim = useRef(new Animated.Value(1)).current;
-
-  const toggle = () => {
-    Animated.timing(rotateAnim, {
-      toValue: open ? 0 : 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-    setOpen((v) => !v);
-  };
-
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["180deg", "0deg"],
-  });
-
   return (
-    <View style={styles.sectionBlock}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.section}>{title}</Text>
-        <TouchableOpacity
-          onPress={toggle}
-          style={styles.chevronBtn}
-          activeOpacity={0.8}
-        >
-          <Animated.View style={{ transform: [{ rotate }] }}>
-            <AppIcon name="keyboard-arrow-up" size={20} color={Colors.white} />
-          </Animated.View>
-        </TouchableOpacity>
+    <TouchableOpacity
+      style={styles.sectionHeader}
+      onPress={onToggle}
+      activeOpacity={0.85}
+    >
+      <Text style={styles.sectionHeaderText}>{title}</Text>
+
+      <View style={styles.sectionHeaderIcon}>
+        <AppIcon
+          name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+          size={20}
+          color={Colors.white}
+        />
       </View>
-      {open && <View style={styles.sectionCard}>{children}</View>}
-    </View>
+    </TouchableOpacity>
   );
 }
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuAnimation = useRef(new Animated.Value(0)).current;
-  const [firstName, setFirstName] = useState("there");
-  const [circles, setCircles] = useState<Circle[]>([]);
 
-  useEffect(() => {
-    (async () => {
-      const [profileRes, circlesRes] = await Promise.all([
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [firstName, setFirstName] = useState("Jamie");
+  const [privateExpanded, setPrivateExpanded] = useState(true);
+  const [publicExpanded, setPublicExpanded] = useState(true);
+
+  const [myClubs, setMyClubs] = useState<Circle[]>([]);
+  const [publicClubs, setPublicClubs] = useState<Circle[]>([]);
+
+  const loadDashboard = async () => {
+    try {
+      if (!refreshing) setLoading(true);
+
+      const [profileRes, myClubsRes, publicClubsRes] = await Promise.all([
         getCurrentProfile(),
-        getCurrentUserCircles(),
+        getUserCircles(),
+        getPublicCircles(),
       ]);
-      if (profileRes.success && profileRes.data?.full_name) {
-        setFirstName(profileRes.data.full_name.split(" ")[0]);
+
+      if (profileRes.success && profileRes.data) {
+        const rawName =
+          profileRes.data.full_name ||
+          profileRes.data.username ||
+          "Jamie";
+
+        const first = rawName.trim().split(" ")[0] || "Jamie";
+        setFirstName(first);
       }
-      if (circlesRes.success && circlesRes.data) {
-        setCircles(circlesRes.data);
+
+      if (myClubsRes.success && myClubsRes.data) {
+        setMyClubs(myClubsRes.data);
+      } else {
+        setMyClubs([]);
       }
-    })();
-  }, []);
 
-  const hasClubs = circles.length > 0;
+      if (publicClubsRes.success && publicClubsRes.data) {
+        setPublicClubs(publicClubsRes.data);
+      } else {
+        setPublicClubs([]);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-  useEffect(() => {
-    Animated.spring(menuAnimation, {
-      toValue: menuOpen ? 1 : 0,
-      useNativeDriver: true,
-      damping: 18,
-      stiffness: 220,
-      mass: 0.9,
-    }).start();
-  }, [menuAnimation, menuOpen]);
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboard();
+    }, [])
+  );
 
-  const closeMenu = () => setMenuOpen(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadDashboard();
+  };
 
-  const handleCreateClub = () => {
-    closeMenu();
-    Alert.alert(
-      "Create a savings club",
-      "The create-club flow is the next screen to wire up.",
+  const myPrivateClubs = useMemo(() => {
+    return myClubs.filter((club) => club.visibility === "private");
+  }, [myClubs]);
+
+  const myClubIds = useMemo(
+    () => new Set(myClubs.map((club) => club.id)),
+    [myClubs]
+  );
+
+  const availablePublicClubs = useMemo(() => {
+    return publicClubs.filter((club) => !myClubIds.has(club.id));
+  }, [publicClubs, myClubIds]);
+
+  const hasClubs = myClubs.length > 0 || availablePublicClubs.length > 0;
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loaderWrap}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loaderText}>Loading dashboard...</Text>
+      </SafeAreaView>
     );
-  };
-
-  const handleExploreClubs = () => {
-    closeMenu();
-    router.push("/(tabs)/clubs");
-  };
-
-  const menuStyle = {
-    opacity: menuAnimation,
-    transform: [
-      {
-        translateY: menuAnimation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [18, 0],
-        }),
-      },
-      {
-        translateX: menuAnimation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [18, 0],
-        }),
-      },
-      {
-        scale: menuAnimation.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.96, 1],
-        }),
-      },
-    ],
-  };
+  }
 
   return (
-    <View style={styles.screen}>
-      <ScreenHeader title="Dashboard" />
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.topIconBtn}
+            onPress={() => router.replace("/(tabs)" as any)}
+            activeOpacity={0.85}
+          >
+            <AppIcon name="arrow-back" size={24} color={Colors.textDark} />
+          </TouchableOpacity>
 
-      <View style={styles.content}>
-        <ScrollView
-          style={styles.container}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.title}>
-            {hasClubs ? `Welcome back, ${firstName}` : `Welcome, ${firstName}`}
-          </Text>
+          <Text style={styles.pageTitle}>Dashboard</Text>
 
-          {!hasClubs && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyLead}>Boost your savings!</Text>
-              <Text style={styles.emptyCopy}>
-                Create or join a savings club to start saving together.
-              </Text>
+          <View style={styles.topRightIcons}>
+            <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85}>
+              <AppIcon name="person" size={24} color={Colors.textDark} />
+            </TouchableOpacity>
 
-              <ActionButton
+            <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85}>
+              <AppIcon name="notifications" size={22} color={Colors.textDark} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Text style={styles.welcomeText}>
+          {hasClubs ? `Welcome back,\n${firstName}` : `Welcome,\n${firstName}`}
+        </Text>
+
+        {!hasClubs && (
+          <View style={styles.emptyStateCard}>
+            <Text style={styles.emptyLead}>Boost your savings!</Text>
+            <Text style={styles.emptyCopy}>
+              Create or join a savings club to start saving together.
+            </Text>
+
+            <View style={styles.actionsWrap}>
+              <DashboardActionButton
                 label="Create a new savings club"
-                onPress={handleCreateClub}
+                onPress={() => router.push("/create-club" as any)}
               />
-              <ActionButton
+
+              <DashboardActionButton
                 label="Explore public savings clubs"
                 outline
-                onPress={handleExploreClubs}
+                onPress={() => router.push("/(tabs)/clubs" as any)}
               />
             </View>
-          )}
+          </View>
+        )}
 
-          {hasClubs && (
-            <>
-              <CollapsibleSection title="Private Clubs">
-                {circles.map((circle) => (
-                  <ClubCard
-                    key={circle.id}
-                    name={circle.name}
-                    amount={`$${circle.contribution_amount.toLocaleString()} CAD`}
-                    status="Active"
-                  />
-                ))}
-              </CollapsibleSection>
+        {!!myPrivateClubs.length && (
+          <>
+            <SectionHeader
+              title="Private Clubs"
+              expanded={privateExpanded}
+              onToggle={() => setPrivateExpanded((prev) => !prev)}
+            />
 
-              <CollapsibleSection title="Public Clubs">
-                <Text style={styles.emptySection}>No public clubs yet.</Text>
-              </CollapsibleSection>
-            </>
-          )}
-        </ScrollView>
+            {privateExpanded && (
+              <View style={styles.sectionCard}>
+                <View style={styles.sectionBody}>
+                  {myPrivateClubs.map((club) => (
+                    <DashboardClubCard key={club.id} club={club} joined />
+                  ))}
+                </View>
+              </View>
+            )}
+          </>
+        )}
 
-        {menuOpen && <Pressable style={styles.backdrop} onPress={closeMenu} />}
+        <SectionHeader
+          title="Public Clubs"
+          expanded={publicExpanded}
+          onToggle={() => setPublicExpanded((prev) => !prev)}
+        />
 
-        <Animated.View
-          pointerEvents={menuOpen ? "auto" : "none"}
-          style={[styles.fabMenu, menuStyle]}
-        >
-          <ActionButton
-            label="Create a new savings club"
-            onPress={handleCreateClub}
-          />
-          <ActionButton
-            label="Explore public savings clubs"
-            outline
-            onPress={handleExploreClubs}
-          />
-        </Animated.View>
+        {publicExpanded && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionBody}>
+              {availablePublicClubs.length > 0 ? (
+                availablePublicClubs.map((club) => (
+                  <DashboardClubCard key={club.id} club={club} />
+                ))
+              ) : (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyText}>
+                    No public clubs available right now.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {hasClubs && (
+          <View style={styles.actionsWrap}>
+            <DashboardActionButton
+              label="Create a new savings club"
+              onPress={() => router.push("/create-club" as any)}
+            />
+
+            <DashboardActionButton
+              label="Explore public savings clubs"
+              outline
+              onPress={() => router.push("/(tabs)/clubs" as any)}
+            />
+          </View>
+        )}
 
         <TouchableOpacity
-          activeOpacity={0.9}
-          style={[styles.fab, menuOpen && styles.fabOpen]}
-          onPress={() => setMenuOpen((current) => !current)}
+          style={styles.floatingButton}
+          onPress={() => router.push("/(tabs)/clubs" as any)}
+          activeOpacity={0.85}
         >
-          <AppIcon
-            name={menuOpen ? "close" : "add"}
-            size={28}
-            color={Colors.white}
-          />
+          <AppIcon name="add" size={28} color={Colors.white} />
         </TouchableOpacity>
-      </View>
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.white,
-  },
-  content: {
-    flex: 1,
-  },
   container: {
     flex: 1,
-    backgroundColor: "#F8F7F5",
+    backgroundColor: Colors.background,
   },
-  scrollContent: {
+
+  scroll: {
     padding: 20,
     paddingBottom: 120,
+    gap: 16,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: Colors.textDark,
-    marginBottom: 20,
+
+  loaderWrap: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  emptyState: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 24,
-  },
-  emptyLead: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Colors.textDark,
-    marginBottom: 6,
-  },
-  emptyCopy: {
+
+  loaderText: {
+    marginTop: 12,
     fontSize: 14,
-    lineHeight: 20,
     color: Colors.textMid,
-    marginBottom: 16,
   },
-  sectionBlock: {
-    marginBottom: 16,
-  },
-  sectionHeader: {
+
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  section: {
+
+  topRightIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  topIconBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  pageTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
     color: Colors.textDark,
   },
-  chevronBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#2F9AA5",
-    alignItems: "center",
-    justifyContent: "center",
+
+  welcomeText: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: Colors.textDark,
+    lineHeight: 36,
+    marginBottom: 4,
   },
-  sectionCard: {
+
+  emptyStateCard: {
     backgroundColor: Colors.white,
-    borderRadius: 12,
-    overflow: "hidden",
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#E8E8E8",
+    borderColor: Colors.border,
+    padding: 18,
+    marginTop: 8,
   },
-  emptySection: {
-    fontSize: 13,
-    color: Colors.textMid,
-    padding: 14,
-    textAlign: "center",
+
+  emptyLead: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: Colors.textDark,
+    marginBottom: 8,
   },
-  actionButton: {
-    minHeight: 48,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 18,
-    marginBottom: 10,
-    minWidth: 230,
-  },
-  actionButtonFilled: {
-    backgroundColor: "#2F9AA5",
-  },
-  actionButtonOutline: {
-    backgroundColor: Colors.white,
-    borderWidth: 1,
-    borderColor: "#78AEB6",
-  },
-  actionButtonText: {
+
+  emptyCopy: {
     fontSize: 14,
+    color: Colors.textMid,
+    lineHeight: 21,
+    marginBottom: 16,
+  },
+
+  sectionHeader: {
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+  },
+
+  sectionHeaderText: {
+    color: Colors.white,
+    fontSize: 17,
     fontWeight: "700",
   },
-  actionButtonTextFilled: {
-    color: Colors.white,
+
+  sectionHeaderIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#F47F7F",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  actionButtonTextOutline: {
-    color: "#356D76",
+
+  sectionCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 12,
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.08)",
+
+  sectionBody: {
+    gap: 12,
   },
-  fabMenu: {
-    position: "absolute",
-    right: 88,
-    bottom: 90,
+
+  clubCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#EAEAEA",
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+
+  clubCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+
+  clubInfoWrap: {
+    flex: 1,
+  },
+
+  clubRightWrap: {
     alignItems: "flex-end",
+    minWidth: 90,
   },
-  fab: {
+
+  clubCardTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "800",
+    color: Colors.textDark,
+    marginBottom: 8,
+  },
+
+  clubStatus: {
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "capitalize",
+    marginBottom: 8,
+  },
+
+  clubStatusJoined: {
+    color: "#22A06B",
+  },
+
+  clubStatusPublic: {
+    color: Colors.primary,
+  },
+
+  clubContributionLabel: {
+    fontSize: 13,
+    color: Colors.textMid,
+    marginBottom: 4,
+  },
+
+  clubContributionValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.textMid,
+    textAlign: "right",
+  },
+
+  clubMetaRow: {
+    marginTop: 10,
+  },
+
+  clubMetaText: {
+    fontSize: 13,
+    color: Colors.textMid,
+  },
+
+  emptyBox: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 16,
+  },
+
+  emptyText: {
+    fontSize: 14,
+    color: Colors.textMid,
+  },
+
+  actionsWrap: {
+    gap: 14,
+    marginTop: 10,
+  },
+
+  actionButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    paddingVertical: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  actionButtonOutline: {
+    backgroundColor: Colors.white,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+  },
+
+  actionButtonText: {
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  actionButtonOutlineText: {
+    color: Colors.primary,
+  },
+
+  floatingButton: {
     position: "absolute",
-    right: 24,
-    bottom: 28,
-    backgroundColor: "#2F9AA5",
+    right: 20,
+    bottom: 20,
     width: 58,
     height: 58,
     borderRadius: 29,
-    justifyContent: "center",
+    backgroundColor: Colors.primary,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
+    justifyContent: "center",
     elevation: 10,
-  },
-  fabOpen: {
-    backgroundColor: "#C74428",
   },
 });

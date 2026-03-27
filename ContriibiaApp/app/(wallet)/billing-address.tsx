@@ -50,6 +50,56 @@ export default function BillingAddressScreen() {
     router.back();
   };
 
+  const handleContinue = async () => {
+    if (existingBusinessCard) {
+      router.replace("/(tabs)/wallet" as any);
+      return;
+    }
+
+    if (mode === "manual") {
+      if (!street.trim() || !city.trim() || !province.trim() || !postalCode.trim()) {
+        Alert.alert("Missing details", "Please complete all billing address fields.");
+        return;
+      }
+    }
+
+    try {
+      setSaving(true);
+
+      const res = await addCard({
+        holder_name: fullName,
+        last4: "0000",
+        expiry: "12/30",
+        type: "business",
+        bank_name: "Contribiia Business",
+        billing_address_1: mode === "manual" ? street.trim() : "Personal Address",
+        billing_address_2: mode === "manual" ? `Postal Code: ${postalCode.trim()}` : undefined,
+        billing_city: mode === "manual" ? city.trim() : "Calgary",
+        billing_province: mode === "manual" ? province.trim() : "AB",
+        billing_country: "Canada",
+      });
+
+      if (!res.success) {
+        Alert.alert("Setup failed", res.error || "Unable to set up business wallet.");
+        return;
+      }
+
+      Alert.alert("Success", "Business wallet setup completed.");
+      router.replace("/(tabs)/wallet" as any);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loaderWrap}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loaderText}>Loading billing setup...</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["bottom"]}>
       <KeyboardAvoidingView
@@ -63,10 +113,7 @@ export default function BillingAddressScreen() {
 
           {mode === "select" ? (
             <View style={styles.optionGroup}>
-              <TouchableOpacity
-                style={styles.optionBtn}
-                onPress={handleContinue}
-              >
+              <TouchableOpacity style={styles.optionBtn} onPress={handleContinue}>
                 <Text style={styles.optionBtnText}>Use Personal Address</Text>
               </TouchableOpacity>
 
@@ -144,23 +191,26 @@ export default function BillingAddressScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1, backgroundColor: Colors.background },
+  loaderWrap: {
     flex: 1,
     backgroundColor: Colors.background,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  scroll: {
-    padding: 24,
-    gap: 20,
+  loaderText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: Colors.textMid,
   },
+  scroll: { padding: 24, gap: 20 },
   title: {
     fontSize: 18,
     fontWeight: "700",
     color: Colors.textDark,
     lineHeight: 26,
   },
-  optionGroup: {
-    gap: 12,
-  },
+  optionGroup: { gap: 12 },
   optionBtn: {
     borderWidth: 1.5,
     borderColor: Colors.primary,
@@ -173,20 +223,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 15,
   },
-  optionBtnOutline: {
-    borderColor: Colors.border,
-  },
+  optionBtnOutline: { borderColor: Colors.border },
   optionBtnOutlineText: {
     color: Colors.textMid,
     fontWeight: "600",
     fontSize: 15,
   },
-  formGroup: {
-    gap: 14,
-  },
-  field: {
-    gap: 6,
-  },
+  formGroup: { gap: 14 },
+  field: { gap: 6 },
   label: {
     fontSize: 14,
     fontWeight: "600",
@@ -200,10 +244,9 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     fontSize: 15,
     color: Colors.textDark,
+    backgroundColor: Colors.white,
   },
-  backLink: {
-    paddingVertical: 4,
-  },
+  backLink: { paddingVertical: 4 },
   backLinkText: {
     color: Colors.primary,
     fontSize: 14,

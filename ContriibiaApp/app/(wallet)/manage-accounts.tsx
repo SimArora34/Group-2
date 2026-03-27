@@ -1,18 +1,19 @@
-import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
-import AppIcon from '../../components/AppIcon';
+import { useFocusEffect, router } from "expo-router";
+import React, { useCallback, useState } from "react";
+import AppIcon from "../../components/AppIcon";
 import {
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../../constants/Colors';
-import { deleteBankAccount, getBankAccounts } from '../../src/services/bankAccountService';
-import { BankAccount } from '../../src/types';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "../../constants/Colors";
+import { deleteBankAccount, getBankAccounts } from "../../src/services/bankAccountService";
+import { BankAccount } from "../../src/types";
 
 export default function ManageAccountsScreen() {
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
@@ -34,11 +35,17 @@ export default function ManageAccountsScreen() {
     setDeleteTargetId(null);
   };
 
-  return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+  const handleLinkNewAccount = () => {
+    Alert.alert(
+      "Coming Soon",
+      "Link a New Account will be connected once the bank account add flow is finalized.",
+    );
+  };
 
-        <TouchableOpacity style={styles.linkRow}>
+  return (
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <TouchableOpacity style={styles.linkRow} onPress={handleLinkNewAccount}>
           <Text style={styles.linkRowText}>Link a New Account</Text>
           <View style={styles.addIcon}>
             <AppIcon name="add" size={20} color={Colors.primary} />
@@ -51,18 +58,28 @@ export default function ManageAccountsScreen() {
               <Text style={styles.accountAcNo}>AC No: {account.account_number}</Text>
               <Text style={styles.accountBank}>Bank: {account.bank_name}</Text>
             </View>
+
             <View style={styles.accountRight}>
-              <View style={[
-                styles.typeBadge,
-                account.account_type === 'SAVINGS' ? styles.typeSavings : styles.typeCurrent,
-              ]}>
-                <Text style={[
-                  styles.typeBadgeText,
-                  account.account_type === 'SAVINGS' ? styles.typeSavingsText : styles.typeCurrentText,
-                ]}>
+              <View
+                style={[
+                  styles.typeBadge,
+                  account.account_type === "SAVINGS"
+                    ? styles.typeSavings
+                    : styles.typeCurrent,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.typeBadgeText,
+                    account.account_type === "SAVINGS"
+                      ? styles.typeSavingsText
+                      : styles.typeCurrentText,
+                  ]}
+                >
                   {account.account_type}
                 </Text>
               </View>
+
               <TouchableOpacity
                 style={styles.deleteBtn}
                 onPress={() => setDeleteTargetId(account.id)}
@@ -79,10 +96,8 @@ export default function ManageAccountsScreen() {
             <Text style={styles.emptyText}>No bank accounts linked</Text>
           </View>
         )}
-
       </ScrollView>
 
-      {/* Confirm Delete Modal */}
       <Modal
         visible={!!deleteTargetId}
         transparent
@@ -101,8 +116,8 @@ export default function ManageAccountsScreen() {
             <Text style={styles.modalTitle}>Confirm Delete</Text>
 
             <Text style={styles.modalNote}>
-              <Text style={styles.bold}>Note:</Text>
-              {' '}Once deleted, this account will not be saved in the app.
+              <Text style={styles.bold}>Note:</Text> Once deleted, this account will not be
+              saved in the app.
             </Text>
             <Text style={styles.modalDesc}>
               In case you want this account back, you will have to link this account again
@@ -121,25 +136,26 @@ export default function ManageAccountsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scroll: { padding: 20, gap: 12 },
-
   linkRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 4,
     marginBottom: 4,
   },
-  linkRowText: { fontSize: 16, fontWeight: '700', color: Colors.textDark },
+  linkRowText: { fontSize: 16, fontWeight: "700", color: Colors.textDark },
   addIcon: {
-    width: 30, height: 30, borderRadius: 15,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: Colors.primaryLight,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-
   accountRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     backgroundColor: Colors.white,
     borderRadius: 12,
     borderWidth: 1,
@@ -149,49 +165,47 @@ const styles = StyleSheet.create({
   },
   accountInfo: { gap: 4 },
   accountAcNo: { fontSize: 13, color: Colors.textLight },
-  accountBank: { fontSize: 15, fontWeight: '600', color: Colors.textDark },
-  accountRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  accountBank: { fontSize: 15, fontWeight: "600", color: Colors.textDark },
+  accountRight: { flexDirection: "row", alignItems: "center", gap: 12 },
   typeBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
   typeSavings: { backgroundColor: Colors.primaryLight },
-  typeCurrent: { backgroundColor: '#E8F5E9' },
-  typeBadgeText: { fontSize: 11, fontWeight: '700' },
+  typeCurrent: { backgroundColor: "#E8F5E9" },
+  typeBadgeText: { fontSize: 11, fontWeight: "700" },
   typeSavingsText: { color: Colors.primary },
   typeCurrentText: { color: Colors.success },
   deleteBtn: { padding: 4 },
-
-  emptyWrap: { alignItems: 'center', paddingTop: 40, gap: 12 },
+  emptyWrap: { alignItems: "center", paddingTop: 40, gap: 12 },
   emptyText: { fontSize: 14, color: Colors.textLight },
-
-  // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
     padding: 24,
   },
   modalBox: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    gap: 12,
+    borderRadius: 14,
+    padding: 20,
+    gap: 14,
   },
-  modalClose: { position: 'absolute', top: 16, right: 16, padding: 4 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.textDark, marginTop: 4 },
-  modalNote: { fontSize: 13, color: Colors.textMid, lineHeight: 20 },
-  modalDesc: { fontSize: 13, color: Colors.textMid, lineHeight: 20 },
-  bold: { fontWeight: '700' },
+  modalClose: { alignSelf: "flex-end" },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: Colors.textDark },
+  modalNote: { fontSize: 14, color: Colors.textMid, lineHeight: 22 },
+  modalDesc: { fontSize: 14, color: Colors.textMid, lineHeight: 22 },
   deleteConfirmBtn: {
     backgroundColor: Colors.error,
     borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 8,
+    paddingVertical: 14,
+    alignItems: "center",
   },
-  deleteConfirmBtnText: { color: Colors.white, fontWeight: '700', fontSize: 16 },
+  deleteConfirmBtnText: {
+    color: Colors.white,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  bold: { fontWeight: "700", color: Colors.textDark },
 });

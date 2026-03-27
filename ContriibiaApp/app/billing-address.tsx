@@ -1,6 +1,5 @@
-import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Alert,
     ScrollView,
@@ -11,104 +10,44 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { SelectModal } from "../components/SelectModal";
 import { Colors } from "../constants/Colors";
 import {
     saveBusinessBillingAddress,
     savePersonalBillingAddress,
 } from "../src/services/profileService";
 
-type Screen =
-  | "manage"
-  | "edit-personal"
-  | "edit-business"
-  | "success-personal"
-  | "success-business";
-
-const PROVINCES = [
-  "AB",
-  "BC",
-  "MB",
-  "NB",
-  "NL",
-  "NS",
-  "NT",
-  "NU",
-  "ON",
-  "PE",
-  "QC",
-  "SK",
-  "YT",
-];
-
-function InputField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  optional,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  optional?: boolean;
-}) {
-  return (
-    <View style={styles.fieldWrap}>
-      <Text style={styles.fieldLabel}>
-        {label}{" "}
-        {optional ? (
-          <Text style={styles.optional}>(optional)</Text>
-        ) : (
-          <Text style={styles.required}>*</Text>
-        )}
-      </Text>
-      <View style={styles.inputWrap}>
-        <TextInput
-          style={styles.input}
-          value={value}
-          onChangeText={onChange}
-          placeholder={placeholder ?? ""}
-          placeholderTextColor={Colors.textPlaceholder}
-        />
-        {value.length > 0 && (
-          <TouchableOpacity onPress={() => onChange("")}>
-            <MaterialIcons name="close" size={18} color={Colors.textLight} />
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-}
+type AddressMode = "select" | "manual";
 
 export default function BillingAddressScreen() {
-  const [screen, setScreen] = useState<Screen>("manage");
+  const [mode, setMode] = useState<AddressMode>("select");
+  const [street, setStreet] = useState("");
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [fullName, setFullName] = useState("Business User");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [existingBusinessCard, setExistingBusinessCard] = useState(false);
 
-  // Personal address form
-  const [pAddr1, setPAddr1] = useState("");
-  const [pAddr2, setPAddr2] = useState("");
-  const [pCity, setPCity] = useState("");
-  const [pProvince, setPProvince] = useState("");
-  const [pPostal, setPPostal] = useState("");
-  const [pProvinceOpen, setPProvinceOpen] = useState(false);
+  useEffect(() => {
+    loadBillingSetup();
+  }, []);
 
-  // Business address form
-  const [bAddr1, setBAddr1] = useState("");
-  const [bAddr2, setBAddr2] = useState("");
-  const [bCity, setBCity] = useState("");
-  const [bProvince, setBProvince] = useState("");
-  const [bPostal, setBPostal] = useState("");
-  const [bProvinceOpen, setBProvinceOpen] = useState(false);
+  const loadBillingSetup = async () => {
+    try {
+      setLoading(true);
 
   // Track what changed for success message
   const [changedField, setChangedField] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const personalComplete =
-    pAddr1.trim() && pCity.trim() && pProvince && pPostal.trim();
-  const businessComplete =
-    bAddr1.trim() && bCity.trim() && bProvince && bPostal.trim();
+      if (profileRes.success && profileRes.data) {
+        setFullName(
+          profileRes.data.full_name ||
+            profileRes.data.username ||
+            "Business User"
+        );
+      }
 
   const handleSavePersonal = async () => {
     setSaving(true);
@@ -160,55 +99,11 @@ export default function BillingAddressScreen() {
     setScreen("success-business");
   };
 
-  function Header({ title, onBack }: { title: string; onBack: () => void }) {
+  if (loading) {
     return (
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack}>
-          <MaterialIcons name="arrow-back" size={24} color={Colors.textDark} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{title}</Text>
-        <View style={styles.headerIcons}>
-          <MaterialIcons
-            name="chat-bubble-outline"
-            size={22}
-            color={Colors.textDark}
-          />
-          <MaterialIcons
-            name="notifications-none"
-            size={22}
-            color={Colors.textDark}
-          />
-        </View>
-      </View>
-    );
-  }
-
-  // ── SUCCESS PERSONAL ─────────────────────────────────────────
-  if (screen === "success-personal") {
-    return (
-      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-        <Header
-          title="Edit Billing Address"
-          onBack={() => setScreen("manage")}
-        />
-        <View style={styles.successBanner}>
-          <Text style={styles.successBannerText}>
-            Personal Address updated!
-          </Text>
-        </View>
-        <View style={styles.successBody}>
-          <View style={styles.successCheck}>
-            <MaterialIcons name="check" size={40} color={Colors.white} />
-          </View>
-          <Text style={styles.successTitle}>Congratulations!</Text>
-          <Text style={styles.successDesc}>{changedField}</Text>
-          <TouchableOpacity
-            style={styles.successBtn}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.successBtnText}>Go back to Settings</Text>
-          </TouchableOpacity>
-        </View>
+      <SafeAreaView style={styles.loaderWrap}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loaderText}>Loading billing setup...</Text>
       </SafeAreaView>
     );
   }
@@ -434,165 +329,166 @@ export default function BillingAddressScreen() {
   // ── MANAGE BILLING ADDRESS ────────────────────────────────────
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <Header title="Edit Billing Address" onBack={() => router.back()} />
-      <View style={styles.manageBody}>
-        <Text style={styles.manageTitle}>Manage Billing Address</Text>
-        <TouchableOpacity
-          style={styles.manageBtn}
-          onPress={() => setScreen("edit-personal")}
-        >
-          <Text style={styles.manageBtnText}>Edit Personal Address</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.manageBtn, styles.manageBtnOutline]}
-          onPress={() => setScreen("edit-business")}
-        >
-          <Text style={[styles.manageBtnText, styles.manageBtnOutlineText]}>
-            Edit Business Address
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Text style={styles.title}>
+            Select an address to use as Billing Address
           </Text>
-        </TouchableOpacity>
-      </View>
+
+          {mode === "select" ? (
+            <View style={styles.optionGroup}>
+              <TouchableOpacity style={styles.optionBtn} onPress={handleContinue}>
+                <Text style={styles.optionBtnText}>Use Personal Address</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.optionBtn, styles.optionBtnOutline]}
+                onPress={() => setMode("manual")}
+              >
+                <Text style={styles.optionBtnOutlineText}>
+                  Add another Address
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.formGroup}>
+              {[
+                {
+                  label: "Street Address",
+                  value: street,
+                  setter: setStreet,
+                  placeholder: "123 Main St",
+                },
+                {
+                  label: "City",
+                  value: city,
+                  setter: setCity,
+                  placeholder: "Calgary",
+                },
+                {
+                  label: "Province",
+                  value: province,
+                  setter: setProvince,
+                  placeholder: "AB",
+                },
+                {
+                  label: "Postal Code",
+                  value: postalCode,
+                  setter: setPostalCode,
+                  placeholder: "T2P 1J9",
+                },
+              ].map(({ label, value, setter, placeholder }) => (
+                <View key={label} style={styles.field}>
+                  <Text style={styles.label}>{label}</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={value}
+                    onChangeText={setter}
+                    placeholder={placeholder}
+                    placeholderTextColor={Colors.textPlaceholder}
+                  />
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={styles.backLink}
+                onPress={() => setMode("select")}
+              >
+                <Text style={styles.backLinkText}>← Back to options</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={[styles.continueBtn, saving && { opacity: 0.7 }]}
+            onPress={handleContinue}
+            disabled={saving}
+          >
+            <Text style={styles.continueBtnText}>
+              {saving ? "Saving..." : "Continue"}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    flexDirection: "row",
+  loaderWrap: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: Colors.textDark },
-  headerIcons: { flexDirection: "row", gap: 10 },
-  scroll: { padding: 20, paddingBottom: 40, gap: 2 },
-
-  addressTypeTitle: {
+  loaderText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: Colors.textMid,
+  },
+  scroll: { padding: 24, gap: 20 },
+  title: {
     fontSize: 18,
     fontWeight: "700",
     color: Colors.textDark,
-    marginBottom: 12,
+    lineHeight: 26,
   },
-  fieldWrap: { marginBottom: 14 },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Colors.textDark,
-    marginBottom: 4,
-  },
-  required: { color: Colors.error },
-  optional: { color: Colors.textLight, fontWeight: "400" },
-  inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: Colors.white,
-  },
-  input: { flex: 1, height: 46, fontSize: 15, color: Colors.textDark },
-
-  pickerBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 46,
-    backgroundColor: Colors.white,
-  },
-  pickerText: { fontSize: 15, color: Colors.textDark },
-  pickerPlaceholder: { fontSize: 15, color: Colors.textPlaceholder },
-
-  saveBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  saveBtnDisabled: { backgroundColor: Colors.disabled },
-  saveBtnText: { color: Colors.white, fontWeight: "700", fontSize: 15 },
-  cancelBtn: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  cancelBtnText: { color: Colors.textDark, fontWeight: "600", fontSize: 15 },
-
-  // Manage screen
-  manageBody: { flex: 1, padding: 20, gap: 16 },
-  manageTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: Colors.textDark,
-    marginBottom: 8,
-  },
-  manageBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  manageBtnText: { color: Colors.white, fontWeight: "700", fontSize: 15 },
-  manageBtnOutline: {
-    backgroundColor: Colors.white,
-    borderWidth: 1,
+  optionGroup: { gap: 12 },
+  optionBtn: {
+    borderWidth: 1.5,
     borderColor: Colors.primary,
-  },
-  manageBtnOutlineText: { color: Colors.primary },
-
-  // Success screen
-  successBanner: {
-    backgroundColor: Colors.primaryLight,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  successBannerText: {
-    color: Colors.primaryDark,
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  successBody: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 32,
-    gap: 14,
-  },
-  successCheck: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.success,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  successTitle: { fontSize: 24, fontWeight: "800", color: Colors.textDark },
-  successDesc: {
-    fontSize: 14,
-    color: Colors.textMid,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  successBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
+    borderRadius: 12,
     paddingVertical: 14,
-    paddingHorizontal: 32,
     alignItems: "center",
-    width: "100%",
-    marginTop: 8,
+    backgroundColor: Colors.white,
   },
-  successBtnText: { color: Colors.white, fontWeight: "700", fontSize: 15 },
+  optionBtnText: {
+    color: Colors.primary,
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  optionBtnOutline: { borderColor: Colors.border },
+  optionBtnOutlineText: {
+    color: Colors.textMid,
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  formGroup: { gap: 14 },
+  field: { gap: 6 },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.textDark,
+  },
+  input: {
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    fontSize: 15,
+    color: Colors.textDark,
+    backgroundColor: Colors.white,
+  },
+  backLink: { paddingVertical: 4 },
+  backLinkText: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  continueBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  continueBtnText: {
+    color: Colors.white,
+    fontWeight: "700",
+    fontSize: 16,
+  },
 });
