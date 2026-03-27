@@ -92,6 +92,16 @@ export default function SignupScreen() {
         return;
       }
 
+      if (!result.data?.hasSession) {
+        // Email confirmation is required on this Supabase project.
+        // Direct the user to confirm their email then log in.
+        setErrors({
+          general:
+            'Account created! Please check your email to confirm your account, then log in to continue setup.',
+        });
+        return;
+      }
+
       router.replace('/(verification)/setup-overview');
     } catch (e) {
       setLoading(false);
