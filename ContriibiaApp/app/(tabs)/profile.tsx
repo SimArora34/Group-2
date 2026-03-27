@@ -92,10 +92,10 @@ export default function ProfileScreen() {
   const [mode, setMode] = useState<ScreenMode>("view");
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileForm>({
-    fullName: "Jamie Taiwo",
-    username: "ja_ta2409",
+    fullName: "",
+    username: "",
     email: "",
-    phone: "+1 234 567 890",
+    phone: "",
     createdAt: "",
   });
   const [draft, setDraft] = useState(profile);
@@ -109,10 +109,10 @@ export default function ProfileScreen() {
     }
 
     const loadedProfile = {
-      fullName: profileRes.data.full_name || "Jamie Taiwo",
-      username: profileRes.data.username || "ja_ta2409",
+      fullName: profileRes.data.full_name || "",
+      username: profileRes.data.username || "",
       email: profileRes.data.email || "",
-      phone: profileRes.data.phone || "+1 234 567 890",
+      phone: profileRes.data.phone || "",
       createdAt: profileRes.data.created_at || "",
     };
 
@@ -137,7 +137,7 @@ export default function ProfileScreen() {
         month: "short",
         year: "numeric",
       })
-    : "Jun 2025";
+    : "";
 
   const initials =
     profile.fullName
@@ -145,7 +145,7 @@ export default function ProfileScreen() {
       .map((part) => part[0])
       .join("")
       .slice(0, 2)
-      .toUpperCase() || "JT";
+      .toUpperCase() || "";
 
   const hasChanges =
     draft.fullName.trim() !== profile.fullName.trim() ||

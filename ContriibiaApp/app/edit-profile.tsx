@@ -88,10 +88,10 @@ function ProfileField({
 export default function EditProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileForm>({
-    fullName: "Jamie Taiwo",
-    username: "ja_ta2409",
+    fullName: "",
+    username: "",
     email: "",
-    phone: "+1 234 567 890",
+    phone: "",
     createdAt: "",
   });
   const [draft, setDraft] = useState(profile);
@@ -105,10 +105,10 @@ export default function EditProfileScreen() {
       }
 
       const loadedProfile = {
-        fullName: profileRes.data.full_name || "Jamie Taiwo",
-        username: profileRes.data.username || "ja_ta2409",
+        fullName: profileRes.data.full_name || "",
+        username: profileRes.data.username || "",
         email: profileRes.data.email || "",
-        phone: profileRes.data.phone || "+1 234 567 890",
+        phone: profileRes.data.phone || "",
         createdAt: profileRes.data.created_at || "",
       };
 
