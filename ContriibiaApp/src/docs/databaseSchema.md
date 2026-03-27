@@ -274,6 +274,11 @@ create policy "profiles_select_own"
 on public.profiles for select
 using (auth.uid() = id);
 
+create policy "profiles_update_own"
+on public.profiles for update
+using (auth.uid() = id)
+with check (auth.uid() = id);
+
 create policy "wallets_select_own"
 on public.wallets for select
 using (auth.uid() = user_id);

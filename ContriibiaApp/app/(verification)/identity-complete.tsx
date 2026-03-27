@@ -7,10 +7,12 @@ import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
 
 const STEPS = [
-  { num: 1, label: 'Verify your identity', done: true },
-  { num: 2, label: 'Link bank account', done: false, active: true },
-  { num: 3, label: 'Start saving!', done: false, active: false },
+  { num: 1, label: 'Verify your identity' },
+  { num: 2, label: 'Link bank account' },
+  { num: 3, label: 'Start saving!' },
 ];
+
+const CURRENT_STEP = 2;
 
 export default function IdentityCompleteScreen() {
   return (
@@ -23,44 +25,49 @@ export default function IdentityCompleteScreen() {
         </Text>
 
         <View style={styles.stepsContainer}>
-          {STEPS.map((step) => (
-            <View
-              key={step.num}
-              style={[
-                styles.stepRow,
-                step.active && styles.stepRowActive,
-                step.done && styles.stepRowDone,
-              ]}
-            >
+          {STEPS.map((step) => {
+            const isDone = step.num < CURRENT_STEP;
+            const isActive = step.num === CURRENT_STEP;
+
+            return (
               <View
+                key={step.num}
                 style={[
-                  styles.numCircle,
-                  step.done && styles.numCircleDone,
-                  step.active && styles.numCircleActive,
+                  styles.stepRow,
+                  isActive && styles.stepRowActive,
+                  isDone && styles.stepRowDone,
                 ]}
               >
-                <Text
+                <View
                   style={[
-                    styles.numText,
-                    (step.done || step.active) && styles.numTextDone,
+                    styles.numCircle,
+                    isDone && styles.numCircleDone,
+                    isActive && styles.numCircleActive,
                   ]}
                 >
-                  {step.done ? '✓' : step.num}
+                  <Text
+                    style={[
+                      styles.numText,
+                      (isDone || isActive) && styles.numTextDone,
+                    ]}
+                  >
+                    {isDone ? '✓' : step.num}
+                  </Text>
+                </View>
+
+                <Text
+                  style={[
+                    styles.stepLabel,
+                    (isDone || isActive) && styles.stepLabelDone,
+                  ]}
+                >
+                  {step.label}
                 </Text>
+
+                {isActive && <Text style={styles.stepArrow}>›</Text>}
               </View>
-
-              <Text
-                style={[
-                  styles.stepLabel,
-                  (step.done || step.active) && styles.stepLabelDone,
-                ]}
-              >
-                {step.label}
-              </Text>
-
-              {step.active && <Text style={styles.stepArrow}>›</Text>}
-            </View>
-          ))}
+            );
+          })}
         </View>
       </View>
 
@@ -72,7 +79,7 @@ export default function IdentityCompleteScreen() {
         <Button
           label="Skip for now"
           variant="ghost"
-          onPress={() => router.replace('/(tabs)')}
+          onPress={() => router.replace('/(tabs)/DashbaordScreen')}
         />
       </View>
     </SafeAreaView>

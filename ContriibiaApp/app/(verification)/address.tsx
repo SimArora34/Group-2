@@ -15,6 +15,10 @@ import { SelectModal } from "../../components/SelectModal";
 import { Colors } from "../../constants/Colors";
 import mockData from "../../data/mockData.json";
 import { saveAddress } from "../../src/services/profileService";
+import {
+  CANADA_POSTAL_CODE_REGEX,
+  formatCanadianPostalCode,
+} from "../../src/utils/validation";
 
 export default function AddressScreen() {
   const [line1, setLine1] = useState("");
@@ -25,9 +29,50 @@ export default function AddressScreen() {
   const [provinceOpen, setProvinceOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const setPostalFormatted = (value: string) => {
+    setPostal(formatCanadianPostalCode(value));
+  };
+
+  const exitRegistration = () => {
+    router.replace("/(auth)");
+  };
+
+  const buildAddressPayload = () => {
+    const payload: {
+      address_line1?: string;
+      address_line2?: string;
+      city?: string;
+      province?: string;
+      postal_code?: string;
+    } = {};
+
+    if (line1.trim()) {
+      payload.address_line1 = line1.trim();
+    }
+    if (line2.trim()) {
+      payload.address_line2 = line2.trim();
+    }
+    if (city.trim()) {
+      payload.city = city.trim();
+    }
+    if (province) {
+      payload.province = province;
+    }
+    if (postal.trim()) {
+      payload.postal_code = postal.trim();
+    }
+
+    return payload;
+  };
+
   const handleContinue = async () => {
     if (!line1 || !city || !province || !postal) {
       Alert.alert("Error", "Please fill in all required fields");
+      return;
+    }
+
+    if (!CANADA_POSTAL_CODE_REGEX.test(postal)) {
+      Alert.alert("Error", "Postal code must be in A1A 1A1 format");
       return;
     }
 
@@ -50,6 +95,34 @@ export default function AddressScreen() {
     }
 
     router.push("/(verification)/document-select");
+  };
+
+  const handleSaveAndExit = async () => {
+    const payload = buildAddressPayload();
+
+    if (postal && !CANADA_POSTAL_CODE_REGEX.test(postal)) {
+      Alert.alert("Error", "Postal code must be in A1A 1A1 format");
+      return;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      exitRegistration();
+      return;
+    }
+
+    setLoading(true);
+    const res = await saveAddress(payload);
+    setLoading(false);
+
+    if (!res.success) {
+      Alert.alert(
+        "Error",
+        res.error || "Failed to save address. Please try again.",
+      );
+      return;
+    }
+
+    exitRegistration();
   };
 
   return (
@@ -104,9 +177,9 @@ export default function AddressScreen() {
 
         <Input
           label="Postal code"
-          placeholder="Text example"
+          placeholder="A1A 1A1"
           value={postal}
-          onChangeText={setPostal}
+          onChangeText={setPostalFormatted}
           autoCapitalize="characters"
           required
         />
@@ -117,7 +190,7 @@ export default function AddressScreen() {
         <Button
           label="Save and exit"
           variant="ghost"
-          onPress={() => router.replace("/(tabs)")}
+          onPress={handleSaveAndExit}
         />
       </TouchableOpacity>
 

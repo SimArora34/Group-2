@@ -35,7 +35,7 @@ export default function CompleteScreen() {
       </View>
 
       <View style={styles.actions}>
-        <Button label="Start Saving" onPress={() => router.replace('/(tabs)')} />
+        <Button label="Start Saving" onPress={() => router.replace('/(tabs)/DashbaordScreen')} />
       </View>
     </SafeAreaView>
   );

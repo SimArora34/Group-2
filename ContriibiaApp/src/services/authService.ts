@@ -65,6 +65,20 @@ export async function verifyOtp(
 export async function updatePassword(
   newPassword: string,
 ): Promise<ServiceResponse<null>> {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError) return { success: false, error: sessionError.message };
+  if (!session) {
+    return {
+      success: false,
+      error:
+        "Auth session missing. Please sign in or re-verify your reset code.",
+    };
+  }
+
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) return { success: false, error: error.message };
   return { success: true, data: null };

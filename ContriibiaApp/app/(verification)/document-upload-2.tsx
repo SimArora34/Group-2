@@ -54,7 +54,7 @@ export default function DocumentUpload2Screen() {
           <Button
             label="Save and exit"
             variant="ghost"
-            onPress={() => router.replace('/(tabs)')}
+            onPress={() => router.replace('/(auth)')}
           />
         </View>
       </SafeAreaView>

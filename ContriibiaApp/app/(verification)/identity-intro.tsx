@@ -44,7 +44,7 @@ export default function IdentityIntroScreen() {
         <Button
           label="Save and exit"
           variant="ghost"
-          onPress={() => router.replace('/(tabs)')}
+          onPress={() => router.replace('/(auth)')}
         />
       </View>
     </SafeAreaView>

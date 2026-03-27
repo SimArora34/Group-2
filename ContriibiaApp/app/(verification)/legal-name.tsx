@@ -23,24 +23,29 @@ const YEARS = Array.from({ length: 100 }, (_, i) =>
   String(new Date().getFullYear() - i),
 );
 const YEAR_OPTIONS = YEARS;
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
+const MONTHS = Array.from({ length: 12 }, (_, i) =>
+  String(i + 1).padStart(2, "0"),
+);
 const DAYS = Array.from({ length: 31 }, (_, i) =>
   String(i + 1).padStart(2, "0"),
 );
 const GENDERS = ["Male", "Female"];
+
+function isValidDateOfBirth(year: string, month: string, day: string) {
+  const numericYear = Number(year);
+  const numericMonth = Number(month);
+  const numericDay = Number(day);
+
+  const candidate = new Date(
+    Date.UTC(numericYear, numericMonth - 1, numericDay),
+  );
+
+  return (
+    candidate.getUTCFullYear() === numericYear &&
+    candidate.getUTCMonth() === numericMonth - 1 &&
+    candidate.getUTCDate() === numericDay
+  );
+}
 
 function DropdownButton({
   value,
@@ -83,6 +88,33 @@ export default function LegalNameScreen() {
     });
   }, []);
 
+  const exitRegistration = () => {
+    router.replace("/(auth)");
+  };
+
+  const buildVerificationPayload = () => {
+    const payload: {
+      legal_name?: string;
+      date_of_birth?: string;
+      gender?: string;
+    } = {};
+
+    const nameToSave = (differentName ? actualName : legalName).trim();
+    if (nameToSave) {
+      payload.legal_name = nameToSave;
+    }
+
+    if (year && month && day && isValidDateOfBirth(year, month, day)) {
+      payload.date_of_birth = `${year}-${month}-${day}`;
+    }
+
+    if (gender) {
+      payload.gender = gender;
+    }
+
+    return payload;
+  };
+
   const handleContinue = async () => {
     if ((!differentName && !legalName) || (differentName && !actualName)) {
       Alert.alert("Error", "Please enter your legal name");
@@ -94,15 +126,13 @@ export default function LegalNameScreen() {
       return;
     }
 
-    setLoading(true);
-    const nameToSave = differentName ? actualName : legalName;
-    const dob = `${year}-${month}-${day}`;
+    if (!isValidDateOfBirth(year, month, day)) {
+      Alert.alert("Error", "Please enter a valid date of birth");
+      return;
+    }
 
-    const res = await saveVerificationInfo({
-      legal_name: nameToSave,
-      date_of_birth: dob,
-      ...(gender ? { gender } : {}),
-    });
+    setLoading(true);
+    const res = await saveVerificationInfo(buildVerificationPayload());
     setLoading(false);
 
     if (!res.success) {
@@ -111,6 +141,26 @@ export default function LegalNameScreen() {
     }
 
     router.push("/(verification)/address");
+  };
+
+  const handleSaveAndExit = async () => {
+    const payload = buildVerificationPayload();
+
+    if (Object.keys(payload).length === 0) {
+      exitRegistration();
+      return;
+    }
+
+    setLoading(true);
+    const res = await saveVerificationInfo(payload);
+    setLoading(false);
+
+    if (!res.success) {
+      Alert.alert("Error", res.error || "Failed to save. Please try again.");
+      return;
+    }
+
+    exitRegistration();
   };
 
   return (
@@ -202,7 +252,7 @@ export default function LegalNameScreen() {
         <Button
           label="Save and exit"
           variant="ghost"
-          onPress={() => router.replace("/(tabs)")}
+          onPress={handleSaveAndExit}
         />
       </View>
 

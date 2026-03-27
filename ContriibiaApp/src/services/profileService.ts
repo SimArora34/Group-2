@@ -110,11 +110,11 @@ export async function saveVerificationInfo(data: {
 }
 
 export async function saveAddress(data: {
-  address_line1: string;
+  address_line1?: string;
   address_line2?: string;
-  city: string;
-  province: string;
-  postal_code: string;
+  city?: string;
+  province?: string;
+  postal_code?: string;
 }): Promise<ServiceResponse<null>> {
   const {
     data: { user },

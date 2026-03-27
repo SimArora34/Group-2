@@ -1,12 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { Colors } from "../constants/Colors";
 
 const ClubCard = ({ name, amount, status }) => {
   return (
     <View style={styles.card}>
-      <Text style={styles.name}>{name}</Text>
-      <Text style={styles.amount}>Contribution: {amount}</Text>
-      <Text style={styles.status}>{status}</Text>
+      <View style={styles.row}>
+        <Text style={styles.name}>{name}</Text>
+        <Text style={styles.status}>{status}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.amountLabel}>Contribution Amount</Text>
+        <Text style={styles.amount}>{amount}</Text>
+      </View>
     </View>
   );
 };
@@ -15,21 +21,35 @@ export default ClubCard;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    elevation: 3
+    backgroundColor: "#fff",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 2,
   },
   name: {
-    fontWeight: 'bold',
-    fontSize: 16
-  },
-  amount: {
-    marginTop: 5
+    fontWeight: "600",
+    fontSize: 14,
+    color: Colors.primary,
   },
   status: {
-    color: 'green',
-    marginTop: 5
-  }
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#2E9B5F",
+  },
+  amountLabel: {
+    fontSize: 12,
+    color: "#888",
+  },
+  amount: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#222",
+  },
 });

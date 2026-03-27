@@ -7,6 +7,11 @@ import Input from '../../components/Input';
 import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
 import { signUp } from '@/src/services/authService';
+import {
+  CANADA_PHONE_REGEX,
+  PASSWORD_REGEX,
+  formatPhoneNumber,
+} from '@/src/utils/validation';
 
 type FormErrors = {
   name?: string;
@@ -36,6 +41,11 @@ export default function SignupScreen() {
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
+  const setPhone = (val: string) => {
+    setForm((prev) => ({ ...prev, phone: formatPhoneNumber(val) }));
+    setErrors((prev) => ({ ...prev, phone: undefined }));
+  };
+
   const handleCreate = async () => {
     const { name, username, email, phone, password, confirmPassword } = form;
     const newErrors: FormErrors = {};
@@ -49,6 +59,15 @@ export default function SignupScreen() {
 
     if (password && confirmPassword && password !== confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (phone && !CANADA_PHONE_REGEX.test(phone)) {
+      newErrors.phone = 'Use format (555) 555-5555';
+    }
+
+    if (password && !PASSWORD_REGEX.test(password)) {
+      newErrors.password =
+        'Use 8+ chars with uppercase, lowercase, number, and symbol';
     }
 
     if (!agreed) {
@@ -110,9 +129,9 @@ export default function SignupScreen() {
         />
         <Input
           label="Phone number"
-          placeholder="+1 5555 555 555"
+          placeholder="(555) 555-5555"
           value={form.phone}
-          onChangeText={set('phone')}
+          onChangeText={setPhone}
           keyboardType="phone-pad"
           required
           error={errors.phone}
@@ -144,7 +163,7 @@ export default function SignupScreen() {
             {agreed && <Text style={styles.checkmark}>✓</Text>}
           </TouchableOpacity>
           <Text style={styles.checkLabel}>
-            I agree to Contribiia's{' '}
+            I agree to Contribiia{"'"}s{" "}
             <Text style={styles.link} onPress={() => router.push('/(auth)/terms')}>
               Terms & Conditions.
             </Text>

@@ -1,4 +1,5 @@
 import { updatePassword } from "@/src/services/authService";
+import { PASSWORD_REGEX } from "@/src/utils/validation";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -24,8 +25,11 @@ export default function SetPasswordScreen() {
       return;
     }
 
-    if (password.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters");
+    if (!PASSWORD_REGEX.test(password)) {
+      Alert.alert(
+        "Error",
+        "Use 8+ chars with uppercase, lowercase, number, and symbol",
+      );
       return;
     }
 
@@ -36,6 +40,20 @@ export default function SetPasswordScreen() {
     setLoading(false);
 
     if (!result.success) {
+      if (result.error?.toLowerCase().includes("session")) {
+        Alert.alert(
+          "Session expired",
+          "Please verify your reset code again or sign in, then try updating your password.",
+          [
+            {
+              text: "Go to reset password",
+              onPress: () => router.replace("/(auth)/forgot-password"),
+            },
+          ],
+        );
+        return;
+      }
+
       Alert.alert("Error", result.error || "Failed to update password");
       return;
     }
@@ -57,6 +75,9 @@ export default function SetPasswordScreen() {
         <Text style={styles.subheading}>
           Create a new password. Ensure it differs from previous ones for
           security.
+        </Text>
+        <Text style={styles.passwordHint}>
+          Use 8+ characters with uppercase, lowercase, number, and symbol.
         </Text>
 
         <Input
@@ -100,8 +121,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textMid,
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 8,
     lineHeight: 20,
+  },
+  passwordHint: {
+    fontSize: 12,
+    color: Colors.textLight,
+    textAlign: "center",
+    marginBottom: 20,
   },
   spacer: { flex: 1, minHeight: 40 },
 });

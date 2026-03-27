@@ -1,10 +1,11 @@
 import AppIcon from "@/components/AppIcon";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   getCurrentProfile,
   updateCurrentProfile,
 } from "@/src/services/profileService";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -100,27 +101,36 @@ export default function ProfileScreen() {
   const [draft, setDraft] = useState(profile);
   const [usernameNotice, setUsernameNotice] = useState(profile.username);
 
-  useEffect(() => {
-    (async () => {
-      const profileRes = await getCurrentProfile();
+  const loadProfile = useCallback(async () => {
+    const profileRes = await getCurrentProfile();
 
-      if (!profileRes.success || !profileRes.data) {
-        return;
-      }
+    if (!profileRes.success || !profileRes.data) {
+      return;
+    }
 
-      const loadedProfile = {
-        fullName: profileRes.data.full_name || "Jamie Taiwo",
-        username: profileRes.data.username || "ja_ta2409",
-        email: profileRes.data.email || "",
-        phone: profileRes.data.phone || "+1 234 567 890",
-        createdAt: profileRes.data.created_at || "",
-      };
+    const loadedProfile = {
+      fullName: profileRes.data.full_name || "Jamie Taiwo",
+      username: profileRes.data.username || "ja_ta2409",
+      email: profileRes.data.email || "",
+      phone: profileRes.data.phone || "+1 234 567 890",
+      createdAt: profileRes.data.created_at || "",
+    };
 
-      setProfile(loadedProfile);
-      setDraft(loadedProfile);
-      setUsernameNotice(loadedProfile.username);
-    })();
+    setProfile(loadedProfile);
+    setDraft(loadedProfile);
+    setUsernameNotice(loadedProfile.username);
+    setMode("view");
   }, []);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile]),
+  );
 
   const memberSince = profile.createdAt
     ? new Date(profile.createdAt).toLocaleDateString("en-US", {
@@ -157,7 +167,7 @@ export default function ProfileScreen() {
 
   const handleStartEdit = () => {
     setDraft(profile);
-    setMode("edit");
+    router.push("/edit-profile");
   };
 
   const handleSave = async () => {

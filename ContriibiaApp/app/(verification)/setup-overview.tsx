@@ -7,10 +7,12 @@ import Logo from '../../components/Logo';
 import { Colors } from '../../constants/Colors';
 
 const STEPS = [
-  { num: 1, label: 'Verify your identity', active: true },
-  { num: 2, label: 'Link bank account', active: true },
-  { num: 3, label: 'Start saving!', active: false },
+  { num: 1, label: 'Verify your identity' },
+  { num: 2, label: 'Link bank account' },
+  { num: 3, label: 'Start saving!' },
 ];
+
+const CURRENT_STEP = 1;
 
 export default function SetupOverviewScreen() {
   return (
@@ -23,26 +25,50 @@ export default function SetupOverviewScreen() {
         </Text>
 
         <View style={styles.stepsContainer}>
-          {STEPS.map((step) => (
-            <View
-              key={step.num}
-              style={[styles.stepRow, step.active && styles.stepRowActive]}
-            >
+          {STEPS.map((step) => {
+            const isDone = step.num < CURRENT_STEP;
+            const isActive = step.num === CURRENT_STEP;
+
+            return (
               <View
-                style={[styles.numCircle, step.active && styles.numCircleActive]}
+                key={step.num}
+                style={[
+                  styles.stepRow,
+                  isActive && styles.stepRowActive,
+                  isDone && styles.stepRowDone,
+                ]}
               >
-                <Text style={[styles.numText, step.active && styles.numTextActive]}>
-                  {step.num}
+                <View
+                  style={[
+                    styles.numCircle,
+                    isDone && styles.numCircleDone,
+                    isActive && styles.numCircleActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.numText,
+                      isDone && styles.numTextDone,
+                      isActive && styles.numTextActive,
+                    ]}
+                  >
+                    {isDone ? '✓' : step.num}
+                  </Text>
+                </View>
+
+                <Text
+                  style={[
+                    styles.stepLabel,
+                    (isDone || isActive) && styles.stepLabelActive,
+                  ]}
+                >
+                  {step.label}
                 </Text>
+
+                {isActive && <Text style={styles.stepArrow}>›</Text>}
               </View>
-
-              <Text style={[styles.stepLabel, step.active && styles.stepLabelActive]}>
-                {step.label}
-              </Text>
-
-              {step.active && <Text style={styles.stepArrow}>›</Text>}
-            </View>
-          ))}
+            );
+          })}
         </View>
       </View>
 
@@ -92,6 +118,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
     backgroundColor: Colors.white,
   },
+  stepRowDone: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryLight,
+  },
   numCircle: {
     width: 32,
     height: 32,
@@ -106,7 +136,12 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
     backgroundColor: Colors.primaryLight,
   },
+  numCircleDone: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
+  },
   numText: { fontSize: 14, fontWeight: '700', color: Colors.textLight },
+  numTextDone: { color: Colors.white },
   numTextActive: { color: Colors.primary },
   stepLabel: { flex: 1, fontSize: 15, color: Colors.textLight },
   stepLabelActive: { color: Colors.textDark, fontWeight: '500' },
