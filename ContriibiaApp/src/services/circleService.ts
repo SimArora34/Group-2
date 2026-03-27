@@ -30,6 +30,21 @@ export async function joinCircle(
   circleId: UUID,
   userId: UUID,
 ): Promise<ServiceResponse<{ circleId: UUID; userId: UUID }>> {
+  // If not already in the list, find it in publicClubs and add it
+  const alreadyJoined = circles.some((c) => c.id === circleId);
+  if (!alreadyJoined) {
+    const publicClubs = (mockData as any).publicClubs ?? [];
+    const found = publicClubs.find((c: any) => c.id === circleId);
+    if (found) {
+      circles.push({
+        id: found.id,
+        name: found.name,
+        owner_id: userId,
+        contribution_amount: found.contribution_amount,
+        created_at: new Date().toISOString(),
+      });
+    }
+  }
   return { success: true, data: { circleId, userId } };
 }
 

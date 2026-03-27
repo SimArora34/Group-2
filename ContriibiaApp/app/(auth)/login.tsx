@@ -1,5 +1,4 @@
 import { signIn } from "@/src/services/authService";
-import { getCurrentProfile } from "@/src/services/profileService";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -38,14 +37,7 @@ export default function LoginScreen() {
       return;
     }
 
-    // Route to verification setup if the user hasn't completed it yet.
-    const profileRes = await getCurrentProfile();
-    const hasCompletedVerification = !!(profileRes.data?.legal_name);
-    if (!hasCompletedVerification) {
-      router.replace("/(verification)/setup-overview");
-    } else {
-      router.replace("/(tabs)/DashbaordScreen");
-    }
+    router.replace("/(tabs)/DashbaordScreen");
   };
 
   return (

@@ -1,10 +1,10 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "../constants/Colors";
 
-const ClubCard = ({ name, amount, status }) => {
+const ClubCard = ({ name, amount, status, onPress }) => {
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
       <View style={styles.row}>
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.status}>{status}</Text>
@@ -13,7 +13,7 @@ const ClubCard = ({ name, amount, status }) => {
         <Text style={styles.amountLabel}>Contribution Amount</Text>
         <Text style={styles.amount}>{amount}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

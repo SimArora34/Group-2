@@ -155,5 +155,94 @@
       "contribution_amount": 250,
       "created_at": "2026-01-15T12:00:00Z"
     }
+  ],
+  "publicClubs": [
+    {
+      "id": "pc1",
+      "name": "Toronto Savers",
+      "type": "public",
+      "savings_goal": 3148,
+      "contribution_amount": 400,
+      "contribution_frequency": "every 2 weeks",
+      "duration_months": 4,
+      "cycle_start_date": "2025-01-01",
+      "max_members": 6,
+      "current_members": 3,
+      "created_at": "2026-03-20T08:00:00Z",
+      "members": [
+        { "name": "Dei", "initials": "DE", "color": "#1A7F7A" },
+        { "name": "Hayley", "initials": "HA", "color": "#E07B3A" },
+        { "name": "Michael", "initials": "MI", "color": "#745EC4" }
+      ]
+    },
+    {
+      "id": "pc2",
+      "name": "Sweet Baking Club",
+      "type": "public",
+      "savings_goal": 1200,
+      "contribution_amount": 200,
+      "contribution_frequency": "monthly",
+      "duration_months": 6,
+      "cycle_start_date": "2026-04-01",
+      "max_members": 4,
+      "current_members": 2,
+      "created_at": "2026-03-18T10:00:00Z",
+      "members": [
+        { "name": "Rose", "initials": "RO", "color": "#E54964" },
+        { "name": "Phillip", "initials": "PH", "color": "#2B9348" }
+      ]
+    },
+    {
+      "id": "pc3",
+      "name": "Summer Trip Fund",
+      "type": "public",
+      "savings_goal": 5000,
+      "contribution_amount": 300,
+      "contribution_frequency": "every 2 weeks",
+      "duration_months": 8,
+      "cycle_start_date": "2026-05-01",
+      "max_members": 5,
+      "current_members": 1,
+      "created_at": "2026-03-15T14:00:00Z",
+      "members": [
+        { "name": "Kye", "initials": "KY", "color": "#0077B6" }
+      ]
+    },
+    {
+      "id": "pc4",
+      "name": "Downtown Investment Circle",
+      "type": "public",
+      "savings_goal": 10000,
+      "contribution_amount": 500,
+      "contribution_frequency": "monthly",
+      "duration_months": 12,
+      "cycle_start_date": "2026-04-15",
+      "max_members": 8,
+      "current_members": 4,
+      "created_at": "2026-03-10T09:00:00Z",
+      "members": [
+        { "name": "Aaron", "initials": "AA", "color": "#1A7F7A" },
+        { "name": "Kezia", "initials": "KE", "color": "#E07B3A" },
+        { "name": "Omar", "initials": "OM", "color": "#745EC4" },
+        { "name": "Tia", "initials": "TI", "color": "#E54964" }
+      ]
+    },
+    {
+      "id": "pc5",
+      "name": "Holiday Savings Crew",
+      "type": "public",
+      "savings_goal": 2400,
+      "contribution_amount": 100,
+      "contribution_frequency": "every 2 weeks",
+      "duration_months": 6,
+      "cycle_start_date": "2026-06-01",
+      "max_members": 6,
+      "current_members": 2,
+      "created_at": "2026-03-05T11:00:00Z",
+      "members": [
+        { "name": "Bea", "initials": "BE", "color": "#2B9348" },
+        { "name": "Luca", "initials": "LU", "color": "#0077B6" }
+      ]
+    }
   ]
 }

@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import AppIcon from "../../components/AppIcon";
 import ClubCard from "../../components/ClubCard";
 import ScreenHeader from "../../components/ScreenHeader";
@@ -113,6 +114,14 @@ export default function DashboardScreen() {
     })();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      getCurrentUserCircles().then((res) => {
+        if (res.success && res.data) setCircles([...res.data]);
+      });
+    }, []),
+  );
+
   const hasClubs = circles.length > 0;
 
   useEffect(() => {
@@ -206,6 +215,7 @@ export default function DashboardScreen() {
                     name={circle.name}
                     amount={`$${circle.contribution_amount.toLocaleString()} CAD`}
                     status="Active"
+                    onPress={() => router.push({ pathname: '/(clubs)/joined-club', params: { id: circle.id } })}
                   />
                 ))}
               </CollapsibleSection>
