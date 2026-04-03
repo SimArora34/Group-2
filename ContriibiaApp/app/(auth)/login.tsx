@@ -1,6 +1,7 @@
 import { signIn } from "@/src/services/authService";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { getCurrentProfile } from "@/src/services/profileService";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
     Alert,
     ScrollView,
@@ -16,9 +17,14 @@ import Logo from "../../components/Logo";
 import { Colors } from "../../constants/Colors";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
+  const { prefillEmail } = useLocalSearchParams<{ prefillEmail?: string }>();
+  const [email, setEmail] = useState(prefillEmail ?? "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (prefillEmail) setEmail(prefillEmail);
+  }, [prefillEmail]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -30,14 +36,25 @@ export default function LoginScreen() {
 
     const result = await signIn(email.trim(), password);
 
-    setLoading(false);
-
     if (!result.success) {
+      setLoading(false);
       Alert.alert("Login Failed", result.error || "Invalid email or password");
       return;
     }
 
-    router.replace("/(tabs)/DashbaordScreen");
+    // Check whether the user has completed profile setup (verification step).
+    // If legal_name is not set they haven't gone through the setup wizard yet.
+    const profileResult = await getCurrentProfile();
+    setLoading(false);
+
+    const hasCompletedSetup =
+      profileResult.success && !!profileResult.data?.legal_name;
+
+    if (hasCompletedSetup) {
+      router.replace("/(tabs)/DashbaordScreen");
+    } else {
+      router.replace("/(verification)/setup-overview");
+    }
   };
 
   return (

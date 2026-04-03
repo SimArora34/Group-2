@@ -117,6 +117,6 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.borderLight,
   },
   optionSelected: { backgroundColor: Colors.primaryLight },
-  optionText: { fontSize: 16, color: Colors.textDark },
+  optionText: { flex: 1, fontSize: 16, color: Colors.textDark, marginRight: 8 },
   optionTextSelected: { color: Colors.primary, fontWeight: "700" },
 });

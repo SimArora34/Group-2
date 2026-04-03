@@ -2,37 +2,46 @@ import { updatePassword } from "@/src/services/authService";
 import { PASSWORD_REGEX } from "@/src/utils/validation";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
 import Logo from "../../components/Logo";
 import { Colors } from "../../constants/Colors";
 
+type FormErrors = {
+  password?: string;
+  confirmPassword?: string;
+  general?: string;
+};
+
 export default function SetPasswordScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
 
   const handleUpdate = async () => {
-    if (!password || !confirmPassword) {
-      Alert.alert("Error", "Please fill in both fields");
+    const newErrors: FormErrors = {};
+
+    if (!password) newErrors.password = "Password is required";
+    if (!confirmPassword) newErrors.confirmPassword = "Please confirm your password";
+
+    if (password && !PASSWORD_REGEX.test(password)) {
+      newErrors.password =
+        "Use 8+ chars with uppercase, lowercase, number, and symbol";
+    }
+
+    if (password && confirmPassword && password !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
-      return;
-    }
-
-    if (!PASSWORD_REGEX.test(password)) {
-      Alert.alert(
-        "Error",
-        "Use 8+ chars with uppercase, lowercase, number, and symbol",
-      );
-      return;
-    }
-
+    setErrors({});
     setLoading(true);
 
     const result = await updatePassword(password);
@@ -41,20 +50,14 @@ export default function SetPasswordScreen() {
 
     if (!result.success) {
       if (result.error?.toLowerCase().includes("session")) {
-        Alert.alert(
-          "Session expired",
-          "Please verify your reset code again or sign in, then try updating your password.",
-          [
-            {
-              text: "Go to reset password",
-              onPress: () => router.replace("/(auth)/forgot-password"),
-            },
-          ],
-        );
+        setErrors({
+          general:
+            "Session expired. Please verify your reset code again or sign in, then try updating your password.",
+        });
         return;
       }
 
-      Alert.alert("Error", result.error || "Failed to update password");
+      setErrors({ general: result.error || "Failed to update password" });
       return;
     }
 
@@ -73,26 +76,36 @@ export default function SetPasswordScreen() {
 
         <Text style={styles.heading}>Set a new Password</Text>
         <Text style={styles.subheading}>
-          Create a new password. Ensure it differs from previous ones for
-          security.
+          Create a new password using 8+ characters with uppercase, lowercase,
+          number, and symbol.
         </Text>
-        <Text style={styles.passwordHint}>
-          Use 8+ characters with uppercase, lowercase, number, and symbol.
-        </Text>
+        {!!errors.general && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>{errors.general}</Text>
+          </View>
+        )}
 
         <Input
           label="Password"
           placeholder="Enter new password"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(v) => {
+            setPassword(v);
+            setErrors((prev) => ({ ...prev, password: undefined }));
+          }}
           secureTextEntry
+          error={errors.password}
         />
         <Input
           label="Confirm Password"
           placeholder="Re-enter new password"
           value={confirmPassword}
-          onChangeText={setConfirmPassword}
+          onChangeText={(v) => {
+            setConfirmPassword(v);
+            setErrors((prev) => ({ ...prev, confirmPassword: undefined }));
+          }}
           secureTextEntry
+          error={errors.confirmPassword}
         />
 
         <View style={styles.spacer} />
@@ -121,14 +134,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textMid,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 20,
     lineHeight: 20,
   },
-  passwordHint: {
-    fontSize: 12,
-    color: Colors.textLight,
-    textAlign: "center",
-    marginBottom: 20,
-  },
   spacer: { flex: 1, minHeight: 40 },
+  errorBanner: {
+    backgroundColor: '#FDECEA',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorBannerText: { fontSize: 13, color: Colors.error },
 });

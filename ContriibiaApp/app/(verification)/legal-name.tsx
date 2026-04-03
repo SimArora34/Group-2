@@ -58,7 +58,10 @@ function DropdownButton({
 }) {
   return (
     <TouchableOpacity onPress={onPress} style={styles.dropdown}>
-      <Text style={value ? styles.dropdownValue : styles.dropdownPlaceholder}>
+      <Text
+        style={value ? styles.dropdownValue : styles.dropdownPlaceholder}
+        numberOfLines={1}
+      >
         {value || placeholder}
       </Text>
       <Text style={styles.dropdownArrow}>▾</Text>
