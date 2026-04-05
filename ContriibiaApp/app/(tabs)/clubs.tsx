@@ -1,5 +1,9 @@
-import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -8,43 +12,38 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppIcon from "../../components/AppIcon";
 import ClubCard from "../../components/ClubCard";
+import {
+  ActiveClubOverviewScreen,
+  ClubOverviewModal,
+  GroupMembersScreen,
+  MemberAgreementModal,
+} from "../../components/JoinClubFlow";
 import { Colors } from "../../constants/Colors";
 import { supabase } from "../../src/lib/supabaseClient";
-import {
-  getPublicCircles,
-  getUserCircles,
-  joinCircle,
-} from "../../src/services/circleService";
-import { Circle } from "../../src/types";
-import {
-  ClubOverviewModal,
-  MemberAgreementModal,
-  ActiveClubOverviewScreen,
-  GroupMembersScreen,
-  RecipientModal,
-  ContributionSuccessModal,
-} from "../../components/JoinClubFlow";
 
-type ExtendedCircle = Circle & {
-  type?: "public" | "private";
+type ExtendedCircle = {
+  id: string;
+  name: string;
+  owner_id: string;
+  contribution_amount: number;
+  visibility: "public" | "private";
+  total_members: number;
+  created_at: string;
   savings_goal?: number | null;
-  contribution_frequency?: string | null;
   duration_months?: number | null;
   cycle_start_date?: string | null;
+  contribution_frequency?: string | null;
   total_positions?: number | null;
   circle_members?: Array<{
     id?: string;
+    circle_id?: string;
     user_id?: string;
-    order_position?: number | null;
-    status?: string | null;
     joined_at?: string | null;
-    profiles?: {
-      full_name?: string | null;
-    } | null;
   }>;
 };
 
@@ -64,20 +63,20 @@ function SectionHeader({
       activeOpacity={0.85}
     >
       <Text style={styles.sectionHeaderText}>{title}</Text>
-
-      <TouchableOpacity style={styles.sectionHeaderIcon} activeOpacity={1}>
+      <View style={styles.sectionHeaderIcon}>
         <AppIcon
           name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
           size={20}
           color={Colors.white}
         />
-      </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 }
 
 export default function ClubsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -89,37 +88,74 @@ export default function ClubsScreen() {
   const [myClubs, setMyClubs] = useState<ExtendedCircle[]>([]);
   const [publicClubs, setPublicClubs] = useState<ExtendedCircle[]>([]);
 
-  const [selectedCircle, setSelectedCircle] = useState<ExtendedCircle | null>(null);
+  const [selectedCircle, setSelectedCircle] = useState<ExtendedCircle | null>(
+    null
+  );
   const [showOverview, setShowOverview] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
   const [showActiveClub, setShowActiveClub] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
-  const [showRecipient, setShowRecipient] = useState(false);
-  const [showContributionSuccess, setShowContributionSuccess] = useState(false);
   const [agreeJoining, setAgreeJoining] = useState(false);
 
   const loadClubs = async () => {
     try {
       if (!refreshing) setLoading(true);
 
-      const [myRes, publicRes] = await Promise.all([
-        getUserCircles(),
-        getPublicCircles(),
-      ]);
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
-      if (myRes.success && myRes.data) {
-        setMyClubs(myRes.data as ExtendedCircle[]);
-      } else {
+      if (authError || !user) {
+        Alert.alert("Error", "User not authenticated");
         setMyClubs([]);
+        setPublicClubs([]);
+        return;
       }
 
-      if (publicRes.success && publicRes.data) {
-        setPublicClubs(publicRes.data as ExtendedCircle[]);
+      const { data: memberships, error: membershipsError } = await supabase
+        .from("circle_members")
+        .select("circle_id")
+        .eq("user_id", user.id);
+
+      if (membershipsError) {
+        Alert.alert("Membership Error", membershipsError.message);
+        setMyClubs([]);
       } else {
-        setPublicClubs([]);
+        const circleIds = (memberships ?? []).map((m) => m.circle_id);
+
+        if (circleIds.length === 0) {
+          setMyClubs([]);
+        } else {
+          const { data: joinedCircles, error: joinedError } = await supabase
+            .from("circles")
+            .select("*")
+            .in("id", circleIds)
+            .order("created_at", { ascending: false });
+
+          if (joinedError) {
+            Alert.alert("Joined Clubs Error", joinedError.message);
+            setMyClubs([]);
+          } else {
+            setMyClubs((joinedCircles ?? []) as ExtendedCircle[]);
+          }
+        }
       }
-    } catch {
-      Alert.alert("Error", "Failed to load clubs.");
+
+      const { data: allPublic, error: publicError } = await supabase
+        .from("circles")
+        .select("*")
+        .eq("visibility", "public")
+        .order("created_at", { ascending: false });
+
+      if (publicError) {
+        Alert.alert("Public Clubs Error", publicError.message);
+        setPublicClubs([]);
+      } else {
+        setPublicClubs((allPublic ?? []) as ExtendedCircle[]);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to load clubs");
       setMyClubs([]);
       setPublicClubs([]);
     } finally {
@@ -131,32 +167,8 @@ export default function ClubsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadClubs();
-    }, [])
+    }, [params.refresh])
   );
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("clubs-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "circle_members" },
-        async () => {
-          await loadClubs();
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "circles" },
-        async () => {
-          await loadClubs();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -180,18 +192,34 @@ export default function ClubsScreen() {
       setAgreeJoining(true);
       setJoiningId(selectedCircle.id);
 
-      const res = await joinCircle(selectedCircle.id);
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
 
-      if (!res.success) {
-        Alert.alert("Unable to join club", res.error || "Please try again.");
+      if (authError || !user) {
+        Alert.alert("Error", "User not authenticated");
         return;
+      }
+
+      const { error } = await supabase.from("circle_members").insert({
+        circle_id: selectedCircle.id,
+        user_id: user.id,
+      });
+
+      if (error) {
+        if (
+          !error.message.toLowerCase().includes("duplicate") &&
+          !error.message.toLowerCase().includes("unique")
+        ) {
+          Alert.alert("Unable to join club", error.message);
+          return;
+        }
       }
 
       setShowAgreement(false);
       Alert.alert("Success", "You joined the club successfully.");
       await loadClubs();
-    } catch {
-      Alert.alert("Error", "Something went wrong while joining the club.");
     } finally {
       setAgreeJoining(false);
       setJoiningId(null);
@@ -226,153 +254,160 @@ export default function ClubsScreen() {
     );
   }
 
+  if (showActiveClub && selectedCircle) {
+    return (
+      <ActiveClubOverviewScreen
+        circle={selectedCircle}
+        onBack={() => setShowActiveClub(false)}
+        onOpenMembers={() => {
+          setShowActiveClub(false);
+          setShowMembers(true);
+        }}
+        onRequestCashAdvance={() => router.push("/cash-advance" as any)}
+        onShowRecipient={() => {}}
+        onShowContributionSuccess={() => {}}
+      />
+    );
+  }
+
+  if (showMembers && selectedCircle) {
+    return (
+      <GroupMembersScreen
+        circle={selectedCircle}
+        onBack={() => {
+          setShowMembers(false);
+          setShowActiveClub(true);
+        }}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      {showActiveClub && selectedCircle ? (
-        <ActiveClubOverviewScreen
-          circle={selectedCircle}
-          onBack={() => setShowActiveClub(false)}
-          onOpenMembers={() => {
-            setShowActiveClub(false);
-            setShowMembers(true);
-          }}
-          onRequestCashAdvance={() => router.push("/cash-advance" as any)}
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        <View style={styles.topBar}>
+          <TouchableOpacity
+            style={styles.topIconBtn}
+            onPress={() => router.back()}
+            activeOpacity={0.85}
+          >
+            <AppIcon name="arrow-back" size={24} color={Colors.textDark} />
+          </TouchableOpacity>
+
+          <Text style={styles.pageTitle}>Clubs</Text>
+
+          <TouchableOpacity
+            style={styles.createTopButton}
+            onPress={() => router.push("/create-club" as any)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.createTopButtonText}>Create</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.welcomeText}>Savings Clubs</Text>
+
+        <SectionHeader
+          title="Private Clubs"
+          expanded={privateExpanded}
+          onToggle={() => setPrivateExpanded((prev) => !prev)}
         />
-      ) : showMembers && selectedCircle ? (
-        <GroupMembersScreen
-          circle={selectedCircle}
-          onBack={() => {
-            setShowMembers(false);
-            setShowActiveClub(true);
-          }}
+
+        {privateExpanded && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionBody}>
+              {myPrivateClubs.length > 0 ? (
+                myPrivateClubs.map((club) => (
+                  <ClubCard
+                    key={club.id}
+                    name={club.name}
+                    amount={`$${club.contribution_amount}`}
+                    status="Active"
+                    onPress={() => {
+                      setSelectedCircle(club);
+                      setShowActiveClub(true);
+                    }}
+                  />
+                ))
+              ) : (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyText}>
+                    You have not joined any private clubs yet.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        <SectionHeader
+          title="Public Clubs"
+          expanded={publicExpanded}
+          onToggle={() => setPublicExpanded((prev) => !prev)}
         />
-      ) : (
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-        >
-          <SafeAreaView edges={["top"]}>
-            <TouchableOpacity
-              style={styles.topBar}
-              activeOpacity={1}
-            >
-              <TouchableOpacity
-                style={styles.topIconBtn}
-                onPress={() => router.back()}
-                activeOpacity={0.85}
-              >
-                <AppIcon name="arrow-back" size={24} color={Colors.textDark} />
-              </TouchableOpacity>
 
-              <Text style={styles.pageTitle}>Clubs</Text>
+        {publicExpanded && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionBody}>
+              {myPublicClubs.length > 0 &&
+                myPublicClubs.map((club) => (
+                  <ClubCard
+                    key={`joined-${club.id}`}
+                    name={club.name}
+                    amount={`$${club.contribution_amount}`}
+                    status="Active"
+                    onPress={() => {
+                      setSelectedCircle(club);
+                      setShowActiveClub(true);
+                    }}
+                  />
+                ))}
 
-              <TouchableOpacity
-                style={styles.createTopButton}
-                onPress={() => router.push("/Create-club" as any)}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.createTopButtonText}>Create</Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
-
-            <Text style={styles.welcomeText}>Savings Clubs</Text>
-
-            <SectionHeader
-              title="Private Clubs"
-              expanded={privateExpanded}
-              onToggle={() => setPrivateExpanded((prev) => !prev)}
-            />
-
-            {privateExpanded && (
-              <TouchableOpacity style={styles.sectionCard} activeOpacity={1}>
-                {myPrivateClubs.length > 0 ? (
-                  myPrivateClubs.map((club) => (
+              {availablePublicClubs.length > 0 ? (
+                availablePublicClubs.map((club) => (
+                  <View key={`public-${club.id}`}>
                     <ClubCard
-                      key={club.id}
                       name={club.name}
                       amount={`$${club.contribution_amount}`}
-                      status="Active"
+                      status="Public"
                       onPress={() => {
                         setSelectedCircle(club);
-                        setShowActiveClub(true);
+                        setShowOverview(true);
                       }}
                     />
-                  ))
-                ) : (
-                  <TouchableOpacity style={styles.emptyBox} activeOpacity={1}>
-                    <Text style={styles.emptyText}>
-                      You have not joined any private clubs yet.
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </TouchableOpacity>
-            )}
 
-            <SectionHeader
-              title="Public Clubs"
-              expanded={publicExpanded}
-              onToggle={() => setPublicExpanded((prev) => !prev)}
-            />
-
-            {publicExpanded && (
-              <TouchableOpacity style={styles.sectionCard} activeOpacity={1}>
-                {myPublicClubs.length > 0 &&
-                  myPublicClubs.map((club) => (
-                    <ClubCard
-                      key={`joined-${club.id}`}
-                      name={club.name}
-                      amount={`$${club.contribution_amount}`}
-                      status="Active"
-                      onPress={() => {
-                        setSelectedCircle(club);
-                        setShowActiveClub(true);
-                      }}
-                    />
-                  ))}
-
-                {availablePublicClubs.length > 0 ? (
-                  availablePublicClubs.map((club) => (
-                    <TouchableOpacity key={`public-${club.id}`} activeOpacity={1}>
-                      <ClubCard
-                        name={club.name}
-                        amount={`$${club.contribution_amount}`}
-                        status="Public"
-                        onPress={() => {
-                          setSelectedCircle(club);
-                          setShowOverview(true);
-                        }}
-                      />
-
-                      <TouchableOpacity
-                        style={[
-                          styles.joinButton,
-                          joiningId === club.id && styles.joinButtonDisabled,
-                        ]}
-                        onPress={() => handleJoin(club.id)}
-                        disabled={joiningId === club.id}
-                        activeOpacity={0.85}
-                      >
-                        <Text style={styles.joinButtonText}>
-                          {joiningId === club.id ? "Joining..." : "Join Club"}
-                        </Text>
-                      </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.joinButton,
+                        joiningId === club.id && styles.joinButtonDisabled,
+                      ]}
+                      onPress={() => handleJoin(club.id)}
+                      disabled={joiningId === club.id}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.joinButtonText}>
+                        {joiningId === club.id ? "Joining..." : "Join Club"}
+                      </Text>
                     </TouchableOpacity>
-                  ))
-                ) : myPublicClubs.length === 0 ? (
-                  <TouchableOpacity style={styles.emptyBox} activeOpacity={1}>
-                    <Text style={styles.emptyText}>
-                      No public clubs available right now.
-                    </Text>
-                  </TouchableOpacity>
-                ) : null}
-              </TouchableOpacity>
-            )}
-          </SafeAreaView>
-        </ScrollView>
-      )}
+                  </View>
+                ))
+              ) : myPublicClubs.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyText}>
+                    No public clubs available right now.
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        )}
+      </ScrollView>
 
       <ClubOverviewModal
         visible={showOverview}
@@ -391,26 +426,6 @@ export default function ClubsScreen() {
         joining={agreeJoining}
         onConfirm={handleConfirmAgreementJoin}
         onCancel={() => setShowAgreement(false)}
-      />
-
-      <RecipientModal
-        visible={showRecipient}
-        circle={selectedCircle}
-        membersCount={selectedCircle?.circle_members?.length || 0}
-        amountPerMember={Number(selectedCircle?.contribution_amount || 0)}
-        onClose={() => setShowRecipient(false)}
-        onViewClubDetails={() => setShowRecipient(false)}
-        onViewCashAdvance={() => {
-          setShowRecipient(false);
-          router.push("/cash-advance" as any);
-        }}
-      />
-
-      <ContributionSuccessModal
-        visible={showContributionSuccess}
-        circle={selectedCircle}
-        amount={Number(selectedCircle?.contribution_amount || 0)}
-        onClose={() => setShowContributionSuccess(false)}
       />
     </SafeAreaView>
   );
@@ -490,6 +505,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 12,
+  },
+  sectionBody: {
+    gap: 12,
   },
   emptyBox: {
     backgroundColor: Colors.white,

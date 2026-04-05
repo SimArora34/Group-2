@@ -5,6 +5,11 @@ type CreateCircleInput = {
   name: string;
   contribution_amount?: number;
   visibility?: "public" | "private";
+  savings_goal?: number;
+  duration_months?: number;
+  cycle_start_date?: string;
+  contribution_frequency?: string;
+  total_positions?: number;
 };
 
 export async function createCircle(
@@ -27,12 +32,20 @@ export async function createCircle(
       contribution_amount: data.contribution_amount ?? 0,
       visibility: data.visibility ?? "private",
       total_members: 1,
+      savings_goal: data.savings_goal ?? null,
+      duration_months: data.duration_months ?? null,
+      cycle_start_date: data.cycle_start_date ?? null,
+      contribution_frequency: data.contribution_frequency ?? null,
+      total_positions: data.total_positions ?? null,
     })
     .select()
     .single();
 
   if (error || !circle) {
-    return { success: false, error: error?.message || "Failed to create circle" };
+    return {
+      success: false,
+      error: error?.message || "Failed to create circle",
+    };
   }
 
   const { error: memberError } = await supabase.from("circle_members").insert({
@@ -48,10 +61,19 @@ export async function createCircle(
   return { success: true, data: circle as Circle };
 }
 
-export async function getPublicCircles(): Promise<ServiceResponse<Circle[]>> {
+export async function getPublicCircles(): Promise<ServiceResponse<any[]>> {
   const { data, error } = await supabase
     .from("circles")
-    .select("*")
+    .select(`
+      *,
+      circle_members (
+        id,
+        user_id,
+        order_position,
+        status,
+        joined_at
+      )
+    `)
     .eq("visibility", "public")
     .order("created_at", { ascending: false });
 
@@ -59,12 +81,12 @@ export async function getPublicCircles(): Promise<ServiceResponse<Circle[]>> {
     return { success: false, error: error.message };
   }
 
-  return { success: true, data: (data ?? []) as Circle[] };
+  return { success: true, data: data ?? [] };
 }
 
 export async function getUserCircles(
   userId?: UUID
-): Promise<ServiceResponse<Circle[]>> {
+): Promise<ServiceResponse<any[]>> {
   let currentUserId = userId;
 
   if (!currentUserId) {
@@ -99,7 +121,16 @@ export async function getUserCircles(
 
   const { data, error } = await supabase
     .from("circles")
-    .select("*")
+    .select(`
+      *,
+      circle_members (
+        id,
+        user_id,
+        order_position,
+        status,
+        joined_at
+      )
+    `)
     .in("id", circleIds)
     .order("created_at", { ascending: false });
 
@@ -107,10 +138,10 @@ export async function getUserCircles(
     return { success: false, error: error.message };
   }
 
-  return { success: true, data: (data ?? []) as Circle[] };
+  return { success: true, data: data ?? [] };
 }
 
-export async function getPrivateUserCircles(): Promise<ServiceResponse<Circle[]>> {
+export async function getPrivateUserCircles(): Promise<ServiceResponse<any[]>> {
   const result = await getUserCircles();
 
   if (!result.success) return result;
@@ -121,7 +152,7 @@ export async function getPrivateUserCircles(): Promise<ServiceResponse<Circle[]>
   };
 }
 
-export async function getJoinedPublicCircles(): Promise<ServiceResponse<Circle[]>> {
+export async function getJoinedPublicCircles(): Promise<ServiceResponse<any[]>> {
   const result = await getUserCircles();
 
   if (!result.success) return result;

@@ -1,18 +1,12 @@
 import React, { useEffect, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import AppIcon from "../../components/AppIcon";
 import Logo from "../../components/Logo";
 import { Colors } from "../../constants/Colors";
-import { getWallet, getTransactions } from "@/src/services/walletService";
-import { getCurrentProfile } from "@/src/services/profileService";
+import { getWallet, getTransactions } from "../../src/services/walletService";
+import { getCurrentProfile } from "../../src/services/profileService";
 
 const QUICK_ACTIONS = [
   { icon: "group-add", label: "Join Club" },
@@ -79,19 +73,15 @@ export default function HomeScreen() {
       case "Join Club":
         router.push("/(tabs)/clubs");
         break;
-
       case "Send":
         router.push("/(wallet)/send-money");
         break;
-
       case "Receive":
         router.push("/(wallet)/withdraw-money");
         break;
-
       case "History":
         router.push("/(wallet)/transaction-history");
         break;
-
       default:
         break;
     }
@@ -187,14 +177,8 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scroll: {
-    padding: 20,
-    gap: 20,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
+  scroll: { padding: 20, gap: 20 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -257,38 +241,57 @@ const styles = StyleSheet.create({
   },
   statsCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 18,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
+    padding: 20,
+    gap: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
     color: Colors.textDark,
-    marginBottom: 10,
   },
   statRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 12,
   },
   statLabel: {
-    fontSize: 15,
+    fontSize: 14,
     color: Colors.textMid,
   },
   statValue: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
     color: Colors.textDark,
   },
+  emptyState: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 24,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.textDark,
+  },
+  emptyDesc: {
+    marginTop: 6,
+    fontSize: 13,
+    color: Colors.textMid,
+    textAlign: "center",
+  },
   transactionCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 16,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   transactionTop: {
     flexDirection: "row",
@@ -296,36 +299,17 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   transactionType: {
-    fontSize: 14,
-    fontWeight: "700",
     color: Colors.primary,
+    fontWeight: "800",
+    fontSize: 16,
   },
   transactionAmount: {
-    fontSize: 16,
-    fontWeight: "800",
     color: Colors.textDark,
+    fontWeight: "800",
+    fontSize: 16,
   },
   transactionDate: {
-    fontSize: 12,
     color: Colors.textMid,
-  },
-  emptyState: {
-    alignItems: "center",
-    padding: 32,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: Colors.textDark,
-  },
-  emptyDesc: {
-    fontSize: 14,
-    color: Colors.textMid,
-    textAlign: "center",
+    fontSize: 13,
   },
 });
