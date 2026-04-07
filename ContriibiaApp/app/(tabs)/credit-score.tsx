@@ -3,13 +3,15 @@ import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
-import { getCurrentUserCircles } from "../../src/services/circleService";
+import { getUserCircles } from "../../src/services/circleService";
 import { getCurrentProfile } from "../../src/services/profileService";
+import { getCurrentUserTransactions } from "../../src/services/transactionService";
 
 const MAX_SCORE = 10;
 
 function ScoreArc({ score }: { score: number }) {
   const pct = score / MAX_SCORE;
+
   const label =
     pct >= 0.85
       ? "Excellent"
@@ -18,6 +20,7 @@ function ScoreArc({ score }: { score: number }) {
         : pct >= 0.5
           ? "Fair"
           : "Needs Work";
+
   const labelColor =
     pct >= 0.85
       ? Colors.success
@@ -38,7 +41,7 @@ function ScoreArc({ score }: { score: number }) {
         <View
           style={[
             styles.scoreBarFill,
-            { width: `${pct * 100}%` as any, backgroundColor: labelColor },
+            { width: `${pct * 100}%` as const, backgroundColor: labelColor },
           ]}
         />
       </View>
@@ -73,26 +76,46 @@ function FactorRow({
 export default function CreditScoreScreen() {
   const [firstName, setFirstName] = useState("");
   const [clubCount, setClubCount] = useState(0);
+  const [transactionCount, setTransactionCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      const [profileRes, circlesRes] = await Promise.all([
+    loadCreditData();
+  }, []);
+
+  const loadCreditData = async () => {
+    try {
+      const [profileRes, circlesRes, txRes] = await Promise.all([
         getCurrentProfile(),
-        getCurrentUserCircles(),
+        getUserCircles(),
+        getCurrentUserTransactions(),
       ]);
-      if (profileRes.success && profileRes.data?.full_name) {
-        setFirstName(profileRes.data.full_name.split(" ")[0]);
+
+      if (profileRes.success && profileRes.data) {
+        const displayName =
+          profileRes.data.full_name ||
+          profileRes.data.username ||
+          "User";
+
+        setFirstName(displayName.split(" ")[0]);
       }
+
       if (circlesRes.success && circlesRes.data) {
         setClubCount(circlesRes.data.length);
       }
-      setLoading(false);
-    })();
-  }, []);
 
-  // Derive a demo score from club membership (8.5 base, bonus for clubs)
-  const score = Math.min(MAX_SCORE, 7 + clubCount * 0.5);
+      if (txRes.success && txRes.data) {
+        setTransactionCount(txRes.data.length);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const score = Math.min(
+    MAX_SCORE,
+    5 + clubCount * 1.5 + Math.min(transactionCount, 5) * 0.5,
+  );
 
   const factors = [
     {
@@ -100,10 +123,14 @@ export default function CreditScoreScreen() {
       value: `${clubCount} club${clubCount !== 1 ? "s" : ""}`,
       positive: clubCount > 0,
     },
-    { label: "Account in good standing", value: "Yes", positive: true },
-    { label: "Identity verified", value: "Complete", positive: true },
     {
-      label: "Consistent contributions",
+      label: "Wallet activity",
+      value: `${transactionCount} transaction${transactionCount !== 1 ? "s" : ""}`,
+      positive: transactionCount > 0,
+    },
+    { label: "Account in good standing", value: "Yes", positive: true },
+    {
+      label: "Consistent participation",
       value: clubCount > 0 ? "Active" : "No data yet",
       positive: clubCount > 0,
     },
@@ -139,12 +166,12 @@ export default function CreditScoreScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Score Factors</Text>
-          {factors.map((f) => (
+          {factors.map((factor) => (
             <FactorRow
-              key={f.label}
-              label={f.label}
-              value={f.value}
-              positive={f.positive}
+              key={factor.label}
+              label={factor.label}
+              value={factor.value}
+              positive={factor.positive}
             />
           ))}
         </View>
@@ -152,16 +179,16 @@ export default function CreditScoreScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>How to Improve</Text>
           <Text style={styles.tipText}>
-            • Join more savings clubs to show consistent saving behaviour.
+            • Join more savings clubs to improve your participation history.
           </Text>
           <Text style={styles.tipText}>
-            • Complete your identity verification to unlock higher limits.
+            • Keep your wallet active with regular deposits and transactions.
           </Text>
           <Text style={styles.tipText}>
-            • Make regular contributions every month without missing.
+            • Maintain consistent contributions across your clubs.
           </Text>
           <Text style={styles.tipText}>
-            • Link a bank account to enable direct deposit tracking.
+            • Keep your account profile and linked services updated.
           </Text>
         </View>
       </ScrollView>
@@ -180,12 +207,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: Colors.textDark },
-  headerIcons: { flexDirection: "row", gap: 10 },
-  headerIcon: { fontSize: 20 },
-  scroll: { padding: 20, gap: 20, paddingBottom: 40 },
-  greeting: { fontSize: 22, fontWeight: "800", color: Colors.textDark },
-  scoreContainer: { alignItems: "center", gap: 10 },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: Colors.textDark,
+  },
+  headerIcons: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  scroll: {
+    padding: 20,
+    gap: 20,
+    paddingBottom: 40,
+  },
+  greeting: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: Colors.textDark,
+  },
+  scoreContainer: {
+    alignItems: "center",
+    gap: 10,
+  },
   scoreCircle: {
     width: 160,
     height: 160,
@@ -196,9 +240,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: Colors.primaryLight,
   },
-  scoreNumber: { fontSize: 48, fontWeight: "800", color: Colors.primary },
-  scoreMax: { fontSize: 14, color: Colors.textMid, marginTop: -4 },
-  scoreLabel: { fontSize: 18, fontWeight: "700" },
+  scoreNumber: {
+    fontSize: 48,
+    fontWeight: "800",
+    color: Colors.primary,
+  },
+  scoreMax: {
+    fontSize: 14,
+    color: Colors.textMid,
+    marginTop: -4,
+  },
+  scoreLabel: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
   scoreBarTrack: {
     width: "70%",
     height: 8,
@@ -206,7 +261,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.borderLight,
     overflow: "hidden",
   },
-  scoreBarFill: { height: 8, borderRadius: 4 },
+  scoreBarFill: {
+    height: 8,
+    borderRadius: 4,
+  },
   card: {
     backgroundColor: Colors.surface,
     borderRadius: 14,
@@ -229,8 +287,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
   },
-  factorLabel: { fontSize: 14, color: Colors.textMid, flex: 1 },
-  factorRight: { flexDirection: "row", alignItems: "center", gap: 8 },
-  factorValue: { fontSize: 13, fontWeight: "600", color: Colors.textDark },
-  tipText: { fontSize: 14, color: Colors.textMid, lineHeight: 22 },
+  factorLabel: {
+    fontSize: 14,
+    color: Colors.textMid,
+    flex: 1,
+  },
+  factorRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  factorValue: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textDark,
+  },
+  tipText: {
+    fontSize: 14,
+    color: Colors.textMid,
+    lineHeight: 22,
+  },
 });

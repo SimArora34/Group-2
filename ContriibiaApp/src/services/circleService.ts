@@ -1,42 +1,223 @@
-// NOTE: The 'circles' and 'circle_members' tables are not yet in the database schema.
-// This service will be implemented once those tables are added to Supabase.
-// See src/docs/databaseSchema.md for the current schema.
-import mockData from "../../data/mockData.json";
+import { supabase } from "../lib/supabaseClient";
 import { Circle, ServiceResponse, UUID } from "../types";
 
-const circles = [...(mockData.mockCircles as Circle[])];
+type CreateCircleInput = {
+  name: string;
+  contribution_amount?: number;
+  visibility?: "public" | "private";
+  savings_goal?: number;
+  duration_months?: number;
+  cycle_start_date?: string;
+  contribution_frequency?: string;
+  total_positions?: number;
+};
 
 export async function createCircle(
-  data: Partial<Circle>,
+  data: CreateCircleInput
 ): Promise<ServiceResponse<Circle>> {
-  const newCircle: Circle = {
-    id: `c${circles.length + 1}`,
-    name: data.name ?? "New Circle",
-    owner_id: "u1",
-    contribution_amount: data.contribution_amount ?? 0,
-    created_at: new Date().toISOString(),
-  };
-  circles.push(newCircle);
-  return { success: true, data: newCircle };
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { success: false, error: "User not authenticated" };
+  }
+
+  const { data: circle, error } = await supabase
+    .from("circles")
+    .insert({
+      name: data.name,
+      owner_id: user.id,
+      contribution_amount: data.contribution_amount ?? 0,
+      visibility: data.visibility ?? "private",
+      total_members: 1,
+      savings_goal: data.savings_goal ?? null,
+      duration_months: data.duration_months ?? null,
+      cycle_start_date: data.cycle_start_date ?? null,
+      contribution_frequency: data.contribution_frequency ?? null,
+      total_positions: data.total_positions ?? null,
+    })
+    .select()
+    .single();
+
+  if (error || !circle) {
+    return {
+      success: false,
+      error: error?.message || "Failed to create circle",
+    };
+  }
+
+  const { error: memberError } = await supabase.from("circle_members").insert({
+    circle_id: circle.id,
+    user_id: user.id,
+  });
+
+  if (memberError) {
+    await supabase.from("circles").delete().eq("id", circle.id);
+    return { success: false, error: memberError.message };
+  }
+
+  return { success: true, data: circle as Circle };
+}
+
+export async function getPublicCircles(): Promise<ServiceResponse<any[]>> {
+  const { data, error } = await supabase
+    .from("circles")
+    .select(`
+      *,
+      circle_members (
+        id,
+        user_id,
+        order_position,
+        status,
+        joined_at
+      )
+    `)
+    .eq("visibility", "public")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, data: data ?? [] };
 }
 
 export async function getUserCircles(
-  _userId: UUID,
-): Promise<ServiceResponse<Circle[]>> {
-  return { success: true, data: circles };
+  userId?: UUID
+): Promise<ServiceResponse<any[]>> {
+  let currentUserId = userId;
+
+  if (!currentUserId) {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    currentUserId = user.id;
+  }
+
+  const { data: memberships, error: membershipError } = await supabase
+    .from("circle_members")
+    .select("circle_id")
+    .eq("user_id", currentUserId);
+
+  if (membershipError) {
+    return { success: false, error: membershipError.message };
+  }
+
+  const circleIds = (memberships ?? []).map(
+    (membership: { circle_id: UUID }) => membership.circle_id
+  );
+
+  if (circleIds.length === 0) {
+    return { success: true, data: [] };
+  }
+
+  const { data, error } = await supabase
+    .from("circles")
+    .select(`
+      *,
+      circle_members (
+        id,
+        user_id,
+        order_position,
+        status,
+        joined_at
+      )
+    `)
+    .in("id", circleIds)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true, data: data ?? [] };
+}
+
+export async function getPrivateUserCircles(): Promise<ServiceResponse<any[]>> {
+  const result = await getUserCircles();
+
+  if (!result.success) return result;
+
+  return {
+    success: true,
+    data: (result.data ?? []).filter((circle) => circle.visibility === "private"),
+  };
+}
+
+export async function getJoinedPublicCircles(): Promise<ServiceResponse<any[]>> {
+  const result = await getUserCircles();
+
+  if (!result.success) return result;
+
+  return {
+    success: true,
+    data: (result.data ?? []).filter((circle) => circle.visibility === "public"),
+  };
 }
 
 export async function joinCircle(
   circleId: UUID,
-  userId: UUID,
+  userId?: UUID
 ): Promise<ServiceResponse<{ circleId: UUID; userId: UUID }>> {
-  return { success: true, data: { circleId, userId } };
-}
+  let currentUserId = userId;
 
-// Convenience wrapper — fetches circles for the currently signed-in user.
-// When the circles table is added to Supabase this will be updated to query it.
-export async function getCurrentUserCircles(): Promise<
-  ServiceResponse<Circle[]>
-> {
-  return { success: true, data: circles };
+  if (!currentUserId) {
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    currentUserId = user.id;
+  }
+
+  const { error } = await supabase.from("circle_members").insert({
+    circle_id: circleId,
+    user_id: currentUserId,
+  });
+
+  if (error) {
+    if (
+      error.message.toLowerCase().includes("duplicate") ||
+      error.message.toLowerCase().includes("unique")
+    ) {
+      return {
+        success: true,
+        data: { circleId, userId: currentUserId },
+      };
+    }
+
+    return { success: false, error: error.message };
+  }
+
+  const { data: circle, error: circleError } = await supabase
+    .from("circles")
+    .select("total_members")
+    .eq("id", circleId)
+    .single();
+
+  if (!circleError && circle) {
+    await supabase
+      .from("circles")
+      .update({
+        total_members: Number(circle.total_members || 0) + 1,
+      })
+      .eq("id", circleId);
+  }
+
+  return {
+    success: true,
+    data: { circleId, userId: currentUserId },
+  };
 }

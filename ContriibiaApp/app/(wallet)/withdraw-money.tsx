@@ -22,6 +22,7 @@ function generateTxId() {
 
 export default function WithdrawMoneyScreen() {
   const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState<'card' | 'bank' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -29,67 +30,97 @@ export default function WithdrawMoneyScreen() {
 
   const handleWithdraw = async () => {
     if (!parsed || parsed <= 0) {
-      setError('Please enter a valid amount greater than $0.');
+      setError('Enter valid amount');
       return;
     }
+
+    if (!method) {
+      setError('Select withdrawal method');
+      return;
+    }
+
     setError('');
     setLoading(true);
+
     const res = await withdraw(parsed);
+
     setLoading(false);
+
     if (!res.success) {
-      setError(res.error || 'Withdrawal failed. Please try again.');
+      setError(res.error || 'Failed');
       return;
     }
+
     router.replace({
       pathname: '/(wallet)/confirmation',
-      params: { type: 'withdraw', amount: parsed.toFixed(2), txId: generateTxId() },
+      params: {
+        type: 'withdraw',
+        amount: parsed.toFixed(2),
+        txId: generateTxId(),
+      },
     } as any);
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <View style={styles.headerRow}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <AppIcon name="chevron-back" size={28} color={Colors.textDark} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Withdraw money</Text>
+            <View style={{ width: 28 }} />
+          </View>
 
           <Text style={styles.label}>Enter Amount</Text>
+
           <TextInput
-            style={[styles.amountInput, !!error && styles.amountInputError]}
+            style={[styles.input, !!error && styles.inputError]}
             value={amount}
-            onChangeText={(v) => { setAmount(v); setError(''); }}
+            onChangeText={(v) => {
+              setAmount(v);
+              setError('');
+            }}
             placeholder="$0.00"
             placeholderTextColor={Colors.textPlaceholder}
             keyboardType="decimal-pad"
-            autoFocus
           />
-          {!!error && <Text style={styles.errorText}>{error}</Text>}
 
-          <Text style={styles.sectionLabel}>Withdraw to:</Text>
+          <Text style={styles.label}>Withdraw to:</Text>
 
-          <TouchableOpacity style={styles.payOption}>
-            <Text style={styles.payOptionText}>Credit / Debit Card</Text>
-            <AppIcon name="chevron-down" size={18} color={Colors.white} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.payOption}>
-            <Text style={styles.payOptionText}>Bank Account Details</Text>
-            <AppIcon name="chevron-down" size={18} color={Colors.white} />
+          <TouchableOpacity
+            style={[styles.option, method === 'card' && styles.optionActive]}
+            onPress={() => setMethod('card')}
+          >
+            <Text style={[styles.optionText, method === 'card' && styles.optionTextActive]}>
+              Credit / Debit Card
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.withdrawBtn, loading && { opacity: 0.6 }]}
+            style={[styles.option, method === 'bank' && styles.optionActive]}
+            onPress={() => setMethod('bank')}
+          >
+            <Text style={[styles.optionText, method === 'bank' && styles.optionTextActive]}>
+              Bank Account
+            </Text>
+          </TouchableOpacity>
+
+          {!!error && <Text style={styles.error}>{error}</Text>}
+
+          <TouchableOpacity
+            style={[styles.button, loading && { opacity: 0.6 }]}
             onPress={handleWithdraw}
             disabled={loading}
           >
-            <Text style={styles.withdrawBtnText}>{loading ? 'Processing...' : 'Withdraw'}</Text>
+            <Text style={styles.buttonText}>
+              {loading ? 'Processing...' : 'Withdraw'}
+            </Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.etransferBtn} disabled={loading}>
-            <View style={styles.etransferIcon}>
-              <AppIcon name="swap-horizontal" size={18} color="#F5A623" />
-            </View>
-            <Text style={styles.etransferBtnText}>Interac E-Transfer</Text>
-          </TouchableOpacity>
-
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -97,90 +128,59 @@ export default function WithdrawMoneyScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
+  container: { flex: 1, backgroundColor: Colors.background },
+  scroll: { padding: 20, gap: 16 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  scroll: {
-    padding: 20,
-    gap: 14,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
+  title: {
+    fontSize: 18,
+    fontWeight: '800',
     color: Colors.textDark,
   },
-  amountInput: {
-    borderWidth: 1.5,
+  label: { fontWeight: '600', color: Colors.textDark, fontSize: 14 },
+  input: {
+    borderWidth: 1,
     borderColor: Colors.border,
+    padding: 14,
     borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.textDark,
+    backgroundColor: Colors.white,
   },
-  amountInputError: {
+  inputError: {
     borderColor: Colors.error,
   },
-  errorText: {
-    fontSize: 12,
-    color: Colors.error,
-    marginTop: -6,
+  option: {
+    backgroundColor: Colors.surface,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+  optionActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  optionText: {
     color: Colors.textDark,
-    marginTop: 4,
-  },
-  payOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: Colors.primary,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  payOptionText: {
-    color: Colors.white,
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  withdrawBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  withdrawBtnText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  etransferBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    borderWidth: 1.5,
-    borderColor: '#F5A623',
-    borderRadius: 10,
-    paddingVertical: 14,
-  },
-  etransferIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  etransferBtnText: {
-    color: '#F5A623',
     fontWeight: '600',
-    fontSize: 15,
+  },
+  optionTextActive: {
+    color: Colors.white,
+  },
+  button: {
+    backgroundColor: Colors.primary,
+    padding: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: '700',
+  },
+  error: {
+    color: Colors.error,
   },
 });

@@ -39,8 +39,10 @@ function VirtualCard({
           </View>
         )}
       </View>
+
       <Text style={styles.cardName}>{name || '—'}</Text>
       <Text style={styles.cardExpiry}>CONTRIBIIA WALLET</Text>
+
       <View style={styles.cardBalanceRow}>
         <View>
           <Text style={styles.cardBalanceLabel}>Current Balance</Text>
@@ -48,9 +50,10 @@ function VirtualCard({
             {balanceVisible ? formattedBalance : '••••••'}
           </Text>
         </View>
+
         <TouchableOpacity onPress={onToggleBalance}>
           <AppIcon
-            name={balanceVisible ? 'eye-outline' : 'eye-off-outline'}
+            name={balanceVisible ? 'eye-off-outline' : 'eye-outline'}
             size={20}
             color="rgba(255,255,255,0.7)"
           />
@@ -68,16 +71,21 @@ export default function TapToPayScreen() {
 
   useEffect(() => {
     getCurrentProfile().then((res) => {
-      if (res.success && res.data) setName((res.data.full_name ?? '').toUpperCase());
+      if (res.success && res.data) {
+        setName((res.data.full_name || res.data.username || '').toUpperCase());
+      }
     });
+
     getWallet().then((res) => {
-      if (res.success && res.data) setBalance(res.data.balance);
+      if (res.success && res.data) {
+        setBalance(Number(res.data.balance));
+      }
     });
   }, []);
 
   if (provider) {
     return (
-      <SafeAreaView style={styles.container} edges={['bottom']}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={styles.scroll}>
           <VirtualCard
             name={name}
@@ -98,8 +106,8 @@ export default function TapToPayScreen() {
           <Text style={styles.providerNote}>
             Your Contribiia card has been added to{' '}
             <Text style={styles.bold}>
-              {provider === 'apple' ? 'Apple Wallet' : 'Google Wallet'}.
-            </Text>
+              {provider === 'apple' ? 'Apple Wallet' : 'Google Wallet'}
+            </Text>.
             {'\n'}Hold your phone near a contactless reader to pay.
           </Text>
 
@@ -112,7 +120,7 @@ export default function TapToPayScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <VirtualCard
           name={name}
@@ -121,18 +129,12 @@ export default function TapToPayScreen() {
           onToggleBalance={() => setBalanceVisible((v) => !v)}
         />
 
-        <TouchableOpacity
-          style={styles.walletBtn}
-          onPress={() => setProvider('apple')}
-        >
+        <TouchableOpacity style={styles.walletBtn} onPress={() => setProvider('apple')}>
           <AppIcon name="logo-apple" size={22} color={Colors.textDark} />
           <Text style={styles.walletBtnText}>Setup with Apple Wallet</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.walletBtn}
-          onPress={() => setProvider('google')}
-        >
+        <TouchableOpacity style={styles.walletBtn} onPress={() => setProvider('google')}>
           <View style={styles.googleIcon}>
             <Text style={styles.googleG}>G</Text>
           </View>
@@ -150,8 +152,6 @@ export default function TapToPayScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scroll: { padding: 20, gap: 20 },
-
-  // Card
   card: {
     backgroundColor: Colors.primary,
     borderRadius: 20,
@@ -164,76 +164,82 @@ const styles = StyleSheet.create({
   cardTopText: { color: 'rgba(255,255,255,0.8)', fontSize: 14, letterSpacing: 1 },
   businessBadge: {
     backgroundColor: 'rgba(255,255,255,0.25)',
-    width: 22, height: 22, borderRadius: 11,
-    alignItems: 'center', justifyContent: 'center',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   businessBadgeText: { color: Colors.white, fontSize: 12, fontWeight: '800' },
   cardName: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 },
   cardExpiry: { color: 'rgba(255,255,255,0.6)', fontSize: 11 },
   cardBalanceRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
-    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.2)', paddingTop: 12, marginTop: 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.2)',
+    paddingTop: 12,
+    marginTop: 4,
   },
   cardBalanceLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginBottom: 2 },
   cardBalanceAmt: { color: Colors.white, fontSize: 26, fontWeight: '800' },
-
-  // Wallet buttons
   walletBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     backgroundColor: Colors.white,
     borderRadius: 12,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: Colors.border,
     paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   walletBtnText: { fontSize: 15, fontWeight: '600', color: Colors.textDark },
-
-  // Google icon
   googleIcon: {
-    width: 22, height: 22, borderRadius: 11,
-    backgroundColor: '#4285F4',
-    alignItems: 'center', justifyContent: 'center',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  googleG: { color: Colors.white, fontSize: 13, fontWeight: '800' },
-
-  // NFC state
-  nfcWrap: { alignItems: 'center', paddingVertical: 16, gap: 16 },
+  googleG: { color: Colors.primary, fontWeight: '800' },
+  disclaimer: { fontSize: 13, color: Colors.textMid, lineHeight: 20, textAlign: 'center' },
+  nfcWrap: { alignItems: 'center', gap: 16, paddingVertical: 10 },
   nfcCircle: {
-    width: 100, height: 100,
-    alignItems: 'center', justifyContent: 'center',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primaryLight,
+    position: 'relative',
   },
   nfcRing1: {
     position: 'absolute',
-    width: 80, height: 80, borderRadius: 40,
-    borderWidth: 2, borderColor: Colors.primary,
-    opacity: 0.3,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 2,
+    borderColor: 'rgba(47,154,165,0.25)',
   },
   nfcRing2: {
     position: 'absolute',
-    width: 100, height: 100, borderRadius: 50,
-    borderWidth: 2, borderColor: Colors.primary,
-    opacity: 0.15,
+    width: 210,
+    height: 210,
+    borderRadius: 105,
+    borderWidth: 2,
+    borderColor: 'rgba(47,154,165,0.14)',
   },
-  nfcLabel: { fontSize: 16, fontWeight: '600', color: Colors.textDark },
-
+  nfcLabel: { fontSize: 16, fontWeight: '700', color: Colors.textDark },
   providerNote: { fontSize: 14, color: Colors.textMid, lineHeight: 22, textAlign: 'center' },
   bold: { fontWeight: '700', color: Colors.textDark },
-
   doneBtn: {
     backgroundColor: Colors.primary,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
   },
   doneBtnText: { color: Colors.white, fontWeight: '700', fontSize: 16 },
-
-  disclaimer: {
-    fontSize: 12,
-    color: Colors.textLight,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
 });

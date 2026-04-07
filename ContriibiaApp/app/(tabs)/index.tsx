@@ -1,39 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import AppIcon from '../../components/AppIcon';
-import Logo from '../../components/Logo';
-import { Colors } from '../../constants/Colors';
-import { getWallet, getTransactions } from '@/src/services/walletService';
-import { getCurrentProfile } from '@/src/services/profileService';
+import React, { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import AppIcon from "../../components/AppIcon";
+import Logo from "../../components/Logo";
+import { Colors } from "../../constants/Colors";
+import { getWallet, getTransactions } from "../../src/services/walletService";
+import { getCurrentProfile } from "../../src/services/profileService";
 
 const QUICK_ACTIONS = [
-  { icon: 'group-add', label: 'Join Club' },
-  { icon: 'send', label: 'Send' },
-  { icon: 'download', label: 'Receive' },
-  { icon: 'receipt-long', label: 'History' },
+  { icon: "group-add", label: "Join Club" },
+  { icon: "send", label: "Send" },
+  { icon: "download", label: "Receive" },
+  { icon: "receipt-long", label: "History" },
 ];
 
 type Tx = {
   id: string;
   amount: number;
-  type: 'deposit' | 'withdraw';
+  type: "deposit" | "withdraw";
   created_at: string;
 };
 
 export default function HomeScreen() {
-  const [fullName, setFullName] = useState('User');
+  const router = useRouter();
+
+  const [fullName, setFullName] = useState("User");
   const [balance, setBalance] = useState<number>(0);
   const [transactions, setTransactions] = useState<Tx[]>([]);
-  const [loadingText, setLoadingText] = useState('Loading...');
+  const [loadingText, setLoadingText] = useState("Loading...");
 
   const loadHomeData = async () => {
-    const profileRes = await getCurrentProfile();
-    const walletRes = await getWallet();
-    const txRes = await getTransactions();
+    const [profileRes, walletRes, txRes] = await Promise.all([
+      getCurrentProfile(),
+      getWallet(),
+      getTransactions(),
+    ]);
 
     if (profileRes.success && profileRes.data) {
-      setFullName(profileRes.data.full_name || 'User');
+      setFullName(profileRes.data.full_name || "User");
     }
 
     if (walletRes.success && walletRes.data) {
@@ -44,27 +49,46 @@ export default function HomeScreen() {
       setTransactions(txRes.data as Tx[]);
     }
 
-    setLoadingText('');
+    setLoadingText("");
   };
 
   useEffect(() => {
     loadHomeData();
   }, []);
 
-  const firstName = fullName.split(' ')[0] || 'User';
+  const firstName = fullName.split(" ")[0] || "User";
 
   const totalDeposits = transactions
-    .filter((item) => item.type === 'deposit')
+    .filter((item) => item.type === "deposit")
     .reduce((sum, item) => sum + Number(item.amount), 0);
 
   const totalWithdrawals = transactions
-    .filter((item) => item.type === 'withdraw')
+    .filter((item) => item.type === "withdraw")
     .reduce((sum, item) => sum + Number(item.amount), 0);
 
   const recentTransactions = transactions.slice(0, 3);
 
+  const handleQuickAction = (label: string) => {
+    switch (label) {
+      case "Join Club":
+        router.push("/(tabs)/clubs");
+        break;
+      case "Send":
+        router.push("/(wallet)/send-money");
+        break;
+      case "Receive":
+        router.push("/(wallet)/withdraw-money");
+        break;
+      case "History":
+        router.push("/(wallet)/transaction-history");
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
           <Logo size="small" />
@@ -83,7 +107,12 @@ export default function HomeScreen() {
 
         <View style={styles.quickActions}>
           {QUICK_ACTIONS.map((action) => (
-            <TouchableOpacity key={action.label} style={styles.quickAction}>
+            <TouchableOpacity
+              key={action.label}
+              style={styles.quickAction}
+              onPress={() => handleQuickAction(action.label)}
+              activeOpacity={0.85}
+            >
               <View style={styles.quickActionIcon}>
                 <AppIcon name={action.icon} size={22} color={Colors.primary} />
               </View>
@@ -115,7 +144,11 @@ export default function HomeScreen() {
 
         {recentTransactions.length === 0 ? (
           <View style={styles.emptyState}>
-            <AppIcon name="account-balance-wallet" size={48} color={Colors.textLight} />
+            <AppIcon
+              name="account-balance-wallet"
+              size={48}
+              color={Colors.textLight}
+            />
             <Text style={styles.emptyTitle}>No transactions yet</Text>
             <Text style={styles.emptyDesc}>
               Your recent wallet activity will appear here.
@@ -138,75 +171,56 @@ export default function HomeScreen() {
             </View>
           ))
         )}
-
-        <Text style={styles.sectionTitle}>Your Savings Clubs</Text>
-
-        <View style={styles.emptyState}>
-          <AppIcon name="groups" size={48} color={Colors.textLight} />
-          <Text style={styles.emptyTitle}>No clubs yet</Text>
-          <Text style={styles.emptyDesc}>
-            Join or create a savings club to get started.
-          </Text>
-          <TouchableOpacity style={styles.emptyButton}>
-            <Text style={styles.emptyButtonText}>Join a Club</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scroll: {
-    padding: 20,
-    gap: 20,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
+  scroll: { padding: 20, gap: 20 },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   welcomeText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.textDark,
   },
   balanceCard: {
     backgroundColor: Colors.primary,
     borderRadius: 16,
     padding: 24,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 4,
   },
   balanceLabel: {
-    color: 'rgba(255,255,255,0.8)',
+    color: "rgba(255,255,255,0.8)",
     fontSize: 14,
   },
   balanceAmount: {
     color: Colors.white,
     fontSize: 40,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: -1,
   },
   balanceSub: {
-    color: 'rgba(255,255,255,0.7)',
+    color: "rgba(255,255,255,0.7)",
     fontSize: 13,
     marginTop: 4,
   },
   quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   quickAction: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 6,
     flex: 1,
   },
@@ -215,106 +229,87 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
     backgroundColor: Colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: Colors.primary,
-  },
-  quickActionEmoji: {
-    fontSize: 22,
   },
   quickActionLabel: {
     fontSize: 12,
     color: Colors.textMid,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   statsCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 18,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
+    padding: 20,
+    gap: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "800",
     color: Colors.textDark,
-    marginBottom: 10,
   },
   statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   statLabel: {
-    fontSize: 15,
+    fontSize: 14,
     color: Colors.textMid,
   },
   statValue: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textDark,
-  },
-  transactionCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: 16,
-    marginBottom: 10,
-  },
-  transactionTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  transactionType: {
     fontSize: 14,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  transactionAmount: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontWeight: "700",
     color: Colors.textDark,
-  },
-  transactionDate: {
-    fontSize: 12,
-    color: Colors.textMid,
   },
   emptyState: {
-    alignItems: 'center',
-    padding: 32,
     backgroundColor: Colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: Colors.border,
-    gap: 8,
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 8,
+    padding: 24,
+    alignItems: "center",
   },
   emptyTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    marginTop: 12,
+    fontSize: 16,
+    fontWeight: "700",
     color: Colors.textDark,
   },
   emptyDesc: {
-    fontSize: 14,
+    marginTop: 6,
+    fontSize: 13,
     color: Colors.textMid,
-    textAlign: 'center',
+    textAlign: "center",
   },
-  emptyButton: {
-    marginTop: 8,
-    backgroundColor: Colors.primary,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+  transactionCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 16,
+    marginBottom: 12,
   },
-  emptyButtonText: {
-    color: Colors.white,
-    fontWeight: '600',
-    fontSize: 14,
+  transactionTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  transactionType: {
+    color: Colors.primary,
+    fontWeight: "800",
+    fontSize: 16,
+  },
+  transactionAmount: {
+    color: Colors.textDark,
+    fontWeight: "800",
+    fontSize: 16,
+  },
+  transactionDate: {
+    color: Colors.textMid,
+    fontSize: 13,
   },
 });

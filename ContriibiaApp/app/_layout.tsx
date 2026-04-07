@@ -9,21 +9,31 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   useEffect(() => {
-    SplashScreen.hideAsync();
+    const prepare = async () => {
+      try {
+      } finally {
+        await SplashScreen.hideAsync();
+      }
+    };
+
+    prepare();
   }, []);
 
   return (
     <GestureHandlerRootView style={styles.flex}>
       <SafeAreaProvider>
         <Stack
-          screenOptions={{ headerShown: false, animation: "slide_from_right" }}
+          screenOptions={{
+            headerShown: false,
+            animation: "slide_from_right",
+          }}
         >
           <Stack.Screen name="index" />
-          <Stack.Screen name="edit-profile" />
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(verification)" />
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(wallet)" />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

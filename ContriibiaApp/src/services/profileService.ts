@@ -10,7 +10,10 @@ export async function getProfile(
     .eq("id", userId)
     .single();
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
   return { success: true, data: data as Profile };
 }
 
@@ -29,16 +32,29 @@ export async function getCurrentProfile(): Promise<ServiceResponse<Profile>> {
     .eq("id", user.id)
     .single();
 
-  if (error) return { success: false, error: error.message };
-  const profileEmail = (data as Profile).email?.trim();
-  const profilePhone = (data as Profile).phone?.trim();
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  const profile = data as Profile;
 
   return {
     success: true,
     data: {
-      ...(data as Profile),
-      email: user.email ?? profileEmail ?? null,
-      phone: profilePhone || user.user_metadata?.phone || null,
+      ...profile,
+      email: profile.email?.trim() || user.email || null,
+      username:
+        profile.username?.trim() ||
+        user.user_metadata?.username ||
+        null,
+      phone:
+        profile.phone?.trim() ||
+        user.user_metadata?.phone ||
+        null,
+      full_name:
+        profile.full_name?.trim() ||
+        user.user_metadata?.full_name ||
+        null,
     },
   };
 }
@@ -55,15 +71,24 @@ export async function updateCurrentProfile(updates: {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { success: false, error: authError?.message ?? "Not authenticated" };
+    return {
+      success: false,
+      error: authError?.message ?? "Not authenticated",
+    };
   }
+
+  const cleanFullName = updates.full_name.trim();
+  const cleanUsername = updates.username.trim();
+  const cleanEmail = updates.email.trim();
+  const cleanPhone = updates.phone.trim();
 
   const { error: profileError } = await supabase
     .from("profiles")
     .update({
-      full_name: updates.full_name,
-      username: updates.username,
-      email: updates.email,
+      full_name: cleanFullName,
+      username: cleanUsername,
+      email: cleanEmail,
+      phone: cleanPhone,
     })
     .eq("id", user.id);
 
@@ -71,14 +96,15 @@ export async function updateCurrentProfile(updates: {
     return { success: false, error: profileError.message };
   }
 
-  const shouldUpdateEmail = updates.email.trim() !== (user.email ?? "").trim();
+  const shouldUpdateEmail = cleanEmail !== (user.email ?? "").trim();
+
   const { error: userUpdateError } = await supabase.auth.updateUser({
-    ...(shouldUpdateEmail ? { email: updates.email } : {}),
+    ...(shouldUpdateEmail ? { email: cleanEmail } : {}),
     data: {
       ...user.user_metadata,
-      full_name: updates.full_name,
-      username: updates.username,
-      phone: updates.phone,
+      full_name: cleanFullName,
+      username: cleanUsername,
+      phone: cleanPhone,
     },
   });
 
