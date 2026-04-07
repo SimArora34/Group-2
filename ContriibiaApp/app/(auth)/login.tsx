@@ -1,5 +1,4 @@
 import { signIn } from "@/src/services/authService";
-import { getCurrentProfile } from "@/src/services/profileService";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -36,25 +35,16 @@ export default function LoginScreen() {
 
     const result = await signIn(email.trim(), password);
 
+    setLoading(false);
+
     if (!result.success) {
-      setLoading(false);
       Alert.alert("Login Failed", result.error || "Invalid email or password");
       return;
     }
 
-    // Check whether the user has completed profile setup (verification step).
-    // If legal_name is not set they haven't gone through the setup wizard yet.
-    const profileResult = await getCurrentProfile();
-    setLoading(false);
-
-    const hasCompletedSetup =
-      profileResult.success && !!profileResult.data?.legal_name;
-
-    if (hasCompletedSetup) {
-      router.replace("/(tabs)/DashbaordScreen");
-    } else {
-      router.replace("/(verification)/setup-overview");
-    }
+    // TODO: Re-enable setup routing once birthday schema bug is fixed.
+    // New users will be routed to setup-overview after login once resolved.
+    router.replace("/(tabs)/DashbaordScreen");
   };
 
   return (

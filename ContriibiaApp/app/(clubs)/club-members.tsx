@@ -16,9 +16,19 @@ type Member = { name: string; initials: string; color: string };
 type PublicClub = {
   id: string;
   name: string;
+  contribution_amount: number;
+  contribution_frequency: string;
+  cycle_start_date: string;
   max_members: number;
   members: Member[];
 };
+
+const formatLongMonthDate = (date: Date): string =>
+  date.toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
 export default function ClubMembersScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,6 +41,9 @@ export default function ClubMembersScreen() {
   if (!club) return null;
 
   const openSlots = club.max_members - club.members.length - 1; // -1 for you
+  const payoutDate = new Date(club.cycle_start_date);
+  payoutDate.setDate(1);
+  payoutDate.setMonth(payoutDate.getMonth() + 1);
 
   const allSlots = [
     { type: 'you' as const, name: 'You', initials: 'YO', color: Colors.primary, position: club.members.length + 1 },
@@ -60,7 +73,27 @@ export default function ClubMembersScreen() {
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         renderItem={({ item }) => (
-          <View style={styles.row}>
+          <TouchableOpacity
+            style={styles.row}
+            activeOpacity={item.type === 'open' ? 1 : 0.8}
+            disabled={item.type === 'open'}
+            onPress={() =>
+              router.push({
+                pathname: '/(clubs)/member-profile',
+                params: {
+                  clubId: club.id,
+                  color: item.type === 'you' ? Colors.primary : item.color,
+                  contribution: String(club.contribution_amount),
+                  frequency: club.contribution_frequency,
+                  initials: item.type === 'you' ? 'YO' : item.initials,
+                  name: item.name,
+                  payout: formatLongMonthDate(payoutDate),
+                  position: String(item.position),
+                  role: item.type === 'you' ? 'You' : 'Member',
+                },
+              })
+            }
+          >
             <View style={styles.positionCircle}>
               <Text style={styles.positionText}>{item.position}</Text>
             </View>
@@ -93,7 +126,7 @@ export default function ClubMembersScreen() {
                 <Text style={styles.activeBadgeText}>Active</Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
         )}
       />
     </SafeAreaView>
