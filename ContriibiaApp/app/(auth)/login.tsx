@@ -1,7 +1,6 @@
 import { signIn } from "@/src/services/authService";
-import { getCurrentProfile } from "@/src/services/profileService";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
     Alert,
     ScrollView,
@@ -17,9 +16,14 @@ import Logo from "../../components/Logo";
 import { Colors } from "../../constants/Colors";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
+  const { prefillEmail } = useLocalSearchParams<{ prefillEmail?: string }>();
+  const [email, setEmail] = useState(prefillEmail ?? "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (prefillEmail) setEmail(prefillEmail);
+  }, [prefillEmail]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -38,14 +42,9 @@ export default function LoginScreen() {
       return;
     }
 
-    // Route to verification setup if the user hasn't completed it yet.
-    const profileRes = await getCurrentProfile();
-    const hasCompletedVerification = !!(profileRes.data?.legal_name);
-    if (!hasCompletedVerification) {
-      router.replace("/(verification)/setup-overview");
-    } else {
-      router.replace("/(tabs)/DashbaordScreen");
-    }
+    // TODO: Re-enable setup routing once birthday schema bug is fixed.
+    // New users will be routed to setup-overview after login once resolved.
+    router.replace("/(tabs)/DashbaordScreen");
   };
 
   return (

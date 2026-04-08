@@ -93,11 +93,10 @@ export default function SignupScreen() {
       }
 
       if (!result.data?.hasSession) {
-        // Email confirmation is required on this Supabase project.
-        // Direct the user to confirm their email then log in.
-        setErrors({
-          general:
-            'Account created! Please check your email to confirm your account, then log in to continue setup.',
+        // Email confirmation is required — send user to the email-sent screen.
+        router.replace({
+          pathname: '/(auth)/email-sent',
+          params: { email: form.email.trim() },
         });
         return;
       }

@@ -32,6 +32,7 @@ export default function RootLayout() {
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(verification)" />
+          <Stack.Screen name="(clubs)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="(wallet)" />
         </Stack>
