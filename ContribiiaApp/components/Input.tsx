@@ -1,3 +1,4 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { Colors } from '../constants/Colors';
@@ -56,7 +57,11 @@ export default function Input({
         />
         {secureTextEntry && (
           <TouchableOpacity onPress={() => setVisible((v) => !v)} style={styles.eyeButton}>
-            <Text style={styles.eyeIcon}>{visible ? '🙈' : '👁'}</Text>
+            <MaterialIcons
+              name={visible ? 'visibility-off' : 'visibility'}
+              size={20}
+              color={Colors.textPlaceholder}
+            />
           </TouchableOpacity>
         )}
       </View>
@@ -111,8 +116,5 @@ const styles = StyleSheet.create({
   },
   eyeButton: {
     padding: 4,
-  },
-  eyeIcon: {
-    fontSize: 16,
   },
 });

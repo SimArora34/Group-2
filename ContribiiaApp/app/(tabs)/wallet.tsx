@@ -2,6 +2,7 @@ import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -11,7 +12,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppIcon from "../../components/AppIcon";
-import Logo from "../../components/Logo";
 import { Colors } from "../../constants/Colors";
 import { getDefaultCard } from "@/src/services/cardService";
 import { getCurrentProfile } from "@/src/services/profileService";
@@ -214,7 +214,11 @@ export default function WalletScreen() {
             <View style={[styles.card, activeTab === "business" && styles.cardBusiness]}>
               <View style={styles.cardTop}>
                 <View style={styles.cardLogoWrap}>
-                  <Logo size="small" />
+                  <Image
+                    source={require('../../assets/images/logo_B.png')}
+                    style={styles.cardLogo}
+                    resizeMode="contain"
+                  />
                   {activeTab === "business" && (
                     <View style={styles.businessBadge}>
                       <Text style={styles.businessBadgeText}>B</Text>
@@ -368,7 +372,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderRadius: 20,
     padding: 22,
-    gap: 12,
+    aspectRatio: 1.586,
+    justifyContent: 'space-between',
   },
   cardBusiness: { backgroundColor: Colors.primaryDark },
   cardTop: {
@@ -390,12 +395,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   businessBadgeText: { color: Colors.white, fontSize: 12, fontWeight: "800" },
+  cardLogo: {
+    width: 80,
+    height: 28,
+  },
   cardNumber: {
     color: Colors.white,
     fontSize: 18,
     fontWeight: "600",
     letterSpacing: 2,
-    marginTop: 8,
   },
   cardMeta: {
     flexDirection: "row",
@@ -422,7 +430,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    marginTop: 8,
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.2)",
     paddingTop: 12,
