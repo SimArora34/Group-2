@@ -49,7 +49,7 @@ export default function ClubConfirmationScreen() {
       }
 
       Alert.alert("Success", "Club created successfully!", [
-        { text: "OK", onPress: () => router.replace("/(tabs)/DashboardScreen" as any) },
+        { text: "OK", onPress: () => router.replace("/(clubs)/clubs" as any) },
       ]);
     } finally {
       setCreating(false);
