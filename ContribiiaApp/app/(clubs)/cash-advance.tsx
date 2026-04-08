@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { withdraw } from "../src/services/walletService";
+import { withdraw } from "../../src/services/walletService";
 
 export default function CashAdvance() {
   const router = useRouter();

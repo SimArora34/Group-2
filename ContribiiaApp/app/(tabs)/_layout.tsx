@@ -11,7 +11,7 @@ function TabIcon({ name, color }: { name: string; color: string }) {
 export default function TabsLayout() {
   return (
     <Tabs
-      initialRouteName="DashbaordScreen"
+      initialRouteName="DashboardScreen"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
@@ -24,7 +24,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="DashbaordScreen"
+        name="DashboardScreen"
         options={{
           title: "Home",
           tabBarIcon: ({ color }) => (

@@ -39,12 +39,12 @@ type ExtendedCircle = {
   cycle_start_date?: string | null;
   contribution_frequency?: string | null;
   total_positions?: number | null;
-  circle_members?: Array<{
+  circle_members?: {
     id?: string;
     circle_id?: string;
     user_id?: string;
     joined_at?: string | null;
-  }>;
+  }[];
 };
 
 function SectionHeader({
@@ -77,6 +77,9 @@ function SectionHeader({
 export default function ClubsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const viewParam = Array.isArray(params.view) ? params.view[0] : params.view;
+  const modeParam = Array.isArray(params.mode) ? params.mode[0] : params.mode;
+  const isExploreMode = viewParam === "explore" || modeParam === "explore";
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -97,7 +100,7 @@ export default function ClubsScreen() {
   const [showMembers, setShowMembers] = useState(false);
   const [agreeJoining, setAgreeJoining] = useState(false);
 
-  const loadClubs = async () => {
+  const loadClubs = useCallback(async () => {
     try {
       if (!refreshing) setLoading(true);
 
@@ -154,7 +157,7 @@ export default function ClubsScreen() {
       } else {
         setPublicClubs((allPublic ?? []) as ExtendedCircle[]);
       }
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Failed to load clubs");
       setMyClubs([]);
       setPublicClubs([]);
@@ -162,12 +165,12 @@ export default function ClubsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [refreshing]);
 
   useFocusEffect(
     useCallback(() => {
       loadClubs();
-    }, [params.refresh])
+    }, [loadClubs])
   );
 
   const handleRefresh = async () => {
@@ -263,7 +266,7 @@ export default function ClubsScreen() {
           setShowActiveClub(false);
           setShowMembers(true);
         }}
-        onRequestCashAdvance={() => router.push("/cash-advance" as any)}
+        onRequestCashAdvance={() => router.push("/(clubs)/cash-advance")}
         onShowRecipient={() => {}}
         onShowContributionSuccess={() => {}}
       />
@@ -283,7 +286,7 @@ export default function ClubsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -300,79 +303,57 @@ export default function ClubsScreen() {
             <AppIcon name="arrow-back" size={24} color={Colors.textDark} />
           </TouchableOpacity>
 
-          <Text style={styles.pageTitle}>Clubs</Text>
+          <Text style={styles.pageTitle}>
+            {isExploreMode ? "Join a Public Club" : "Clubs"}
+          </Text>
 
-          <TouchableOpacity
-            style={styles.createTopButton}
-            onPress={() => router.push("/create-club" as any)}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.createTopButtonText}>Create</Text>
-          </TouchableOpacity>
+          {isExploreMode ? (
+            <View style={styles.topRightIcons}>
+              <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85}>
+                <AppIcon name="chat-bubble-outline" size={21} color={Colors.textDark} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85}>
+                <AppIcon name="notifications-none" size={24} color={Colors.textDark} />
+                <View style={styles.notifyDot} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.createTopButton}
+              onPress={() => router.push("/(clubs)/create-club")}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.createTopButtonText}>Create</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        <Text style={styles.welcomeText}>Savings Clubs</Text>
+        {isExploreMode ? (
+          <>
+            <Text style={styles.exploreIntro}>
+              Find community by joining one of our public savings clubs.
+            </Text>
 
-        <SectionHeader
-          title="Private Clubs"
-          expanded={privateExpanded}
-          onToggle={() => setPrivateExpanded((prev) => !prev)}
-        />
+            <View style={styles.exploreTools}>
+              <View style={styles.filterPill}>
+                <AppIcon name="tune" size={15} color={Colors.textMid} />
+                <Text style={styles.filterPillText}>Filter</Text>
+              </View>
 
-        {privateExpanded && (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionBody}>
-              {myPrivateClubs.length > 0 ? (
-                myPrivateClubs.map((club) => (
-                  <ClubCard
-                    key={club.id}
-                    name={club.name}
-                    amount={`$${club.contribution_amount}`}
-                    status="Active"
-                    onPress={() => {
-                      setSelectedCircle(club);
-                      setShowActiveClub(true);
-                    }}
-                  />
-                ))
-              ) : (
-                <View style={styles.emptyBox}>
-                  <Text style={styles.emptyText}>
-                    You have not joined any private clubs yet.
-                  </Text>
-                </View>
-              )}
+              <View style={styles.sortPill}>
+                <Text style={styles.sortPillText}>Sort By: Most Recent</Text>
+                <AppIcon name="keyboard-arrow-down" size={18} color={Colors.textMid} />
+              </View>
             </View>
-          </View>
-        )}
 
-        <SectionHeader
-          title="Public Clubs"
-          expanded={publicExpanded}
-          onToggle={() => setPublicExpanded((prev) => !prev)}
-        />
+            <Text style={styles.resultsText}>{availablePublicClubs.length} clubs</Text>
 
-        {publicExpanded && (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionBody}>
-              {myPublicClubs.length > 0 &&
-                myPublicClubs.map((club) => (
-                  <ClubCard
-                    key={`joined-${club.id}`}
-                    name={club.name}
-                    amount={`$${club.contribution_amount}`}
-                    status="Active"
-                    onPress={() => {
-                      setSelectedCircle(club);
-                      setShowActiveClub(true);
-                    }}
-                  />
-                ))}
-
-              {availablePublicClubs.length > 0 ? (
-                availablePublicClubs.map((club) => (
-                  <View key={`public-${club.id}`}>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionBody}>
+                {availablePublicClubs.length > 0 ? (
+                  availablePublicClubs.map((club) => (
                     <ClubCard
+                      key={`explore-${club.id}`}
                       name={club.name}
                       amount={`$${club.contribution_amount}`}
                       status="Public"
@@ -381,31 +362,116 @@ export default function ClubsScreen() {
                         setShowOverview(true);
                       }}
                     />
-
-                    <TouchableOpacity
-                      style={[
-                        styles.joinButton,
-                        joiningId === club.id && styles.joinButtonDisabled,
-                      ]}
-                      onPress={() => handleJoin(club.id)}
-                      disabled={joiningId === club.id}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={styles.joinButtonText}>
-                        {joiningId === club.id ? "Joining..." : "Join Club"}
-                      </Text>
-                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <View style={styles.emptyBox}>
+                    <Text style={styles.emptyText}>
+                      No public clubs are available to join right now.
+                    </Text>
                   </View>
-                ))
-              ) : myPublicClubs.length === 0 ? (
-                <View style={styles.emptyBox}>
-                  <Text style={styles.emptyText}>
-                    No public clubs available right now.
-                  </Text>
-                </View>
-              ) : null}
+                )}
+              </View>
             </View>
-          </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.welcomeText}>Savings Clubs</Text>
+
+            <SectionHeader
+              title="Private Clubs"
+              expanded={privateExpanded}
+              onToggle={() => setPrivateExpanded((prev) => !prev)}
+            />
+
+            {privateExpanded && (
+              <View style={styles.sectionCard}>
+                <View style={styles.sectionBody}>
+                  {myPrivateClubs.length > 0 ? (
+                    myPrivateClubs.map((club) => (
+                      <ClubCard
+                        key={club.id}
+                        name={club.name}
+                        amount={`$${club.contribution_amount}`}
+                        status="Active"
+                        onPress={() => {
+                          setSelectedCircle(club);
+                          setShowActiveClub(true);
+                        }}
+                      />
+                    ))
+                  ) : (
+                    <View style={styles.emptyBox}>
+                      <Text style={styles.emptyText}>
+                        You have not joined any private clubs yet.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+
+            <SectionHeader
+              title="Public Clubs"
+              expanded={publicExpanded}
+              onToggle={() => setPublicExpanded((prev) => !prev)}
+            />
+
+            {publicExpanded && (
+              <View style={styles.sectionCard}>
+                <View style={styles.sectionBody}>
+                  {myPublicClubs.length > 0 &&
+                    myPublicClubs.map((club) => (
+                      <ClubCard
+                        key={`joined-${club.id}`}
+                        name={club.name}
+                        amount={`$${club.contribution_amount}`}
+                        status="Active"
+                        onPress={() => {
+                          setSelectedCircle(club);
+                          setShowActiveClub(true);
+                        }}
+                      />
+                    ))}
+
+                  {availablePublicClubs.length > 0 ? (
+                    availablePublicClubs.map((club) => (
+                      <View key={`public-${club.id}`}>
+                        <ClubCard
+                          name={club.name}
+                          amount={`$${club.contribution_amount}`}
+                          status="Public"
+                          onPress={() => {
+                            setSelectedCircle(club);
+                            setShowOverview(true);
+                          }}
+                        />
+
+                        <TouchableOpacity
+                          style={[
+                            styles.joinButton,
+                            joiningId === club.id && styles.joinButtonDisabled,
+                          ]}
+                          onPress={() => handleJoin(club.id)}
+                          disabled={joiningId === club.id}
+                          activeOpacity={0.85}
+                        >
+                          <Text style={styles.joinButtonText}>
+                            {joiningId === club.id ? "Joining..." : "Join Club"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))
+                  ) : myPublicClubs.length === 0 ? (
+                    <View style={styles.emptyBox}>
+                      <Text style={styles.emptyText}>
+                        No public clubs available right now.
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -433,7 +499,7 @@ export default function ClubsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 20, paddingBottom: 120, gap: 16 },
+  scroll: { padding: 20, paddingBottom: 40, gap: 16 },
   loaderWrap: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -446,6 +512,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 8,
+  },
+  topRightIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
   },
   topIconBtn: {
     width: 36,
@@ -474,6 +545,56 @@ const styles = StyleSheet.create({
     color: Colors.textDark,
     lineHeight: 36,
     marginBottom: 4,
+  },
+  exploreIntro: {
+    fontSize: 13,
+    color: Colors.textMid,
+    lineHeight: 18,
+    marginBottom: 2,
+  },
+  exploreTools: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  filterPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: Colors.white,
+  },
+  filterPillText: {
+    fontSize: 12,
+    color: Colors.textMid,
+    fontWeight: "600",
+  },
+  sortPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: Colors.white,
+  },
+  sortPillText: {
+    fontSize: 12,
+    color: Colors.textMid,
+    fontWeight: "600",
+  },
+  resultsText: {
+    fontSize: 12,
+    color: Colors.textLight,
+    marginTop: -4,
+    marginBottom: -2,
   },
   sectionHeader: {
     backgroundColor: Colors.primary,
@@ -530,5 +651,14 @@ const styles = StyleSheet.create({
   joinButtonText: {
     color: Colors.white,
     fontWeight: "700",
+  },
+  notifyDot: {
+    position: "absolute",
+    top: 8,
+    right: 6,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: "#EF4444",
   },
 });

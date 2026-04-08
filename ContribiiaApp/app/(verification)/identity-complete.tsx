@@ -79,7 +79,7 @@ export default function IdentityCompleteScreen() {
         <Button
           label="Skip for now"
           variant="ghost"
-          onPress={() => router.replace('/(tabs)/DashbaordScreen')}
+          onPress={() => router.replace('/(tabs)/DashboardScreen')}
         />
       </View>
     </SafeAreaView>

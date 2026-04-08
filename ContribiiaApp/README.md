@@ -31,7 +31,7 @@ Make sure you have the following installed before you begin:
 
 ```bash
 git clone <your-repo-url>
-cd ContriibiaApp
+cd ContribiiaApp
 ```
 
 ### 2. Install dependencies
@@ -83,7 +83,7 @@ We use the **Supabase CLI** to track and deploy database changes. Every change t
 
 > **Note:** We write migration files manually. This means **Docker is not required** for our workflow.
 
-> **Important:** The `supabase/` folder lives at the **root of the repo** (next to `ContriibiaApp/`), not inside it. Run migration commands from the repo root.
+> **Important:** The `supabase/` folder lives at the **root of the repo** (next to `ContribiiaApp/`), not inside it. Run migration commands from the repo root.
 
 ---
 
@@ -217,7 +217,7 @@ This runs any migration files your teammate added that haven't been applied to y
 ## Project Structure
 
 ```
-ContriibiaApp/
+ContribiiaApp/
 ├── app/                  # All screens (file-based routing via Expo Router)
 │   ├── (auth)/           # Login, Signup screens
 │   ├── (tabs)/           # Main tab screens (Home, Wallet, etc.)

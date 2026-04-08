@@ -1,0 +1,4 @@
+{
+  "compilerOptions": {},
+  "exclude": ["ContribiiaApp/**", "node_modules"]
+}

@@ -44,7 +44,7 @@ export default function LoginScreen() {
 
     // TODO: Re-enable setup routing once birthday schema bug is fixed.
     // New users will be routed to setup-overview after login once resolved.
-    router.replace("/(tabs)/DashbaordScreen");
+    router.replace("/(tabs)/DashboardScreen");
   };
 
   return (
