@@ -317,7 +317,7 @@ export default function ClubsScreen() {
         </Text>
 
         <View style={styles.exploreToolbar}>
-          <TouchableOpacity style={styles.filterBtn} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.filterBtn} activeOpacity={0.8} onPress={() => Alert.alert('Coming Soon', 'Filtering options are coming in a future update.')}>
             <AppIcon name="filter-list" size={16} color={Colors.textDark} />
             <Text style={styles.filterBtnText}>Filter</Text>
           </TouchableOpacity>
@@ -426,10 +426,10 @@ export default function ClubsScreen() {
         <View style={styles.topBar}>
           <Text style={styles.pageTitle}>Dashboard</Text>
           <View style={styles.topRightIcons}>
-            <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Chat messaging will be available in a future update.')}>
               <AppIcon name="chat-bubble-outline" size={21} color={Colors.textDark} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Notifications will be available in a future update.')}>
               <AppIcon name="notifications-none" size={24} color={Colors.textDark} />
               <View style={styles.notifyDot} />
             </TouchableOpacity>
@@ -879,6 +879,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F4F4F4',
   },
-  exploreDetailLabel: { fontSize: 13, color: Colors.textMid },
-  exploreDetailValue: { fontSize: 13, fontWeight: '600', color: Colors.textDark },
+  exploreDetailLabel: { fontSize: 13, color: Colors.textMid, flex: 1 },
+  exploreDetailValue: { fontSize: 13, fontWeight: '600', color: Colors.textDark, flexShrink: 1, textAlign: 'right' },
 });

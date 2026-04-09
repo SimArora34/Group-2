@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo } from 'react';
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -87,10 +88,10 @@ export default function JoinedClubScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{club.name}</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerBtn}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => Alert.alert('Coming Soon', 'Notifications will be available in a future update.')}>
             <AppIcon name="notifications-none" size={22} color={Colors.textDark} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => router.push('/settings' as any)}>
             <AppIcon name="settings" size={22} color={Colors.textDark} />
           </TouchableOpacity>
         </View>
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
   },
   headerBtn: { width: 32, alignItems: 'center' },
   headerRight: { flexDirection: 'row', gap: 2 },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.textDark },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '700', color: Colors.textDark },
   scroll: { padding: 20, gap: 16, paddingBottom: 40 },
   statusBanner: {
     flexDirection: 'row',
@@ -324,8 +325,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.borderLight,
   },
   settingRowLast: { borderBottomWidth: 0 },
-  settingLabel: { fontSize: 14, color: Colors.textMid },
-  settingValue: { fontSize: 14, fontWeight: '600', color: Colors.textDark },
+  settingLabel: { fontSize: 14, color: Colors.textMid, flex: 1 },
+  settingValue: { fontSize: 14, fontWeight: '600', color: Colors.textDark, flexShrink: 1, textAlign: 'right' },
   demoHeading: {
     fontSize: 12,
     fontWeight: '700',

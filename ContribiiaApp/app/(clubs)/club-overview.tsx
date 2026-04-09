@@ -160,10 +160,10 @@ export default function ClubOverviewScreen({
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Group Details</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerBtn}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => Alert.alert('Coming Soon', 'Chat messaging will be available in a future update.')}>
             <AppIcon name="chat-bubble-outline" size={22} color={Colors.textDark} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => Alert.alert('Coming Soon', 'Notifications will be available in a future update.')}>
             <AppIcon name="notifications-none" size={22} color={Colors.textDark} />
             <View style={styles.notificationDot} />
           </TouchableOpacity>

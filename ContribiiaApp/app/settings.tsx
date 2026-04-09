@@ -735,7 +735,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <SettingsRow
             label="Add an account"
-            onPress={() => {}}
+            onPress={() => Alert.alert('Coming Soon', 'Multi-account support is coming in a future update.')}
             icon={
               <MaterialIcons
                 name="add-circle-outline"
@@ -755,7 +755,7 @@ export default function SettingsScreen() {
           {["Account A", "Account B", "Account C"].map((acct, i) => (
             <View key={acct}>
               {i > 0 && <View style={styles.divider} />}
-              <SettingsRow label={acct} onPress={() => {}} />
+              <SettingsRow label={acct} onPress={() => Alert.alert('Coming Soon', 'Account switching is coming in a future update.')} />
             </View>
           ))}
         </View>
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: Colors.textDark },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: "700", color: Colors.textDark },
   headerIcons: { flexDirection: "row", gap: 10 },
 
   scroll: { padding: 20, gap: 8, paddingBottom: 40 },

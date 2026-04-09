@@ -142,10 +142,10 @@ export default function EditClubScreen() {
           </TouchableOpacity>
           <Text style={styles.headerTitle} numberOfLines={1}>Edit {circleName}</Text>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.headerBtn}>
+            <TouchableOpacity style={styles.headerBtn} onPress={() => Alert.alert('Coming Soon', 'Chat messaging will be available in a future update.')}>
               <AppIcon name="chat-bubble-outline" size={22} color={Colors.textDark} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.headerBtn}>
+            <TouchableOpacity style={styles.headerBtn} onPress={() => Alert.alert('Coming Soon', 'Notifications will be available in a future update.')}>
               <AppIcon name="notifications-none" size={22} color={Colors.textDark} />
             </TouchableOpacity>
           </View>

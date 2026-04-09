@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../../components/Button';
 import ScreenHeader from '../../../components/ScreenHeader';
@@ -17,7 +17,7 @@ export default function DocumentConfirmScreen() {
         <Text style={styles.heading}>Your selected documents:</Text>
 
         <Text style={styles.docTitle}>Government ID – Passport</Text>
-        <TouchableOpacity style={styles.docCard} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.docCard} activeOpacity={0.8} onPress={() => Alert.alert('Document Preview', 'Full-size document preview is coming in a future update.')}>
           <View style={styles.docImagePlaceholder}>
             <Text style={styles.docEmoji}>🪪</Text>
             <Text style={styles.docImageLabel}>[ Passport Image ]</Text>
@@ -26,7 +26,7 @@ export default function DocumentConfirmScreen() {
         </TouchableOpacity>
 
         <Text style={styles.docTitle}>Recent public utility bill</Text>
-        <TouchableOpacity style={styles.docCard} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.docCard} activeOpacity={0.8} onPress={() => Alert.alert('Document Preview', 'Full-size document preview is coming in a future update.')}>
           <View style={styles.docImagePlaceholder}>
             <Text style={styles.docEmoji}>📃</Text>
             <Text style={styles.docImageLabel}>[ Utility Bill Image ]</Text>

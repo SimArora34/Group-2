@@ -234,8 +234,8 @@ export default function ProfileScreen() {
           {mode === "edit" ? "Edit User Profile" : "User Profile"}
         </Text>
         <View style={styles.headerRight}>
-          <HeaderAction name="chat-bubble-outline" />
-          <HeaderAction name="notifications-none" />
+          <HeaderAction name="chat-bubble-outline" onPress={() => Alert.alert('Coming Soon', 'Chat messaging will be available in a future update.')} />
+          <HeaderAction name="notifications-none" onPress={() => Alert.alert('Coming Soon', 'Notifications will be available in a future update.')} />
         </View>
       </View>
 
@@ -483,6 +483,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#163841",
     textAlign: "center",
+    flexShrink: 1,
   },
   inlineEditButton: {
     paddingTop: 3,

@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo } from 'react';
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -68,10 +69,10 @@ export default function MemberProfileScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Member Profile</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerBtn}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => Alert.alert('Coming Soon', 'Chat messaging will be available in a future update.')}>
             <AppIcon name="chat-bubble-outline" size={21} color={Colors.textDark} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerBtn}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => Alert.alert('Coming Soon', 'Notifications will be available in a future update.')}>
             <AppIcon name="notifications-none" size={21} color={Colors.textDark} />
           </TouchableOpacity>
         </View>

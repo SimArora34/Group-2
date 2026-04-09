@@ -2,6 +2,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -230,10 +231,10 @@ export default function CreditScoreScreen() {
         <Text style={styles.headerTitle}>Credit Score</Text>
 
         <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Chat messaging will be available in a future update.')}>
             <AppIcon name="chat-bubble-outline" size={21} color={Colors.textDark} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.iconBtn} activeOpacity={0.85} onPress={() => Alert.alert('Coming Soon', 'Notifications will be available in a future update.')}>
             <AppIcon name="notifications-none" size={24} color={Colors.textDark} />
             <View style={styles.notifyDot} />
           </TouchableOpacity>

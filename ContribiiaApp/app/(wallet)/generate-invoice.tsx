@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import AppIcon from "../../components/AppIcon";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -66,7 +67,7 @@ export default function GenerateInvoiceScreen() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <Text style={styles.previewTitle}>Invoice Preview</Text>
 
-          <TouchableOpacity style={styles.downloadBtn}>
+          <TouchableOpacity style={styles.downloadBtn} onPress={() => Alert.alert('Coming Soon', 'Invoice export and download is coming in a future update.')}>
             <AppIcon name="download-outline" size={20} color={Colors.primary} />
           </TouchableOpacity>
 
