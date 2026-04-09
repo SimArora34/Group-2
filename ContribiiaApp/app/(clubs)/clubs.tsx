@@ -7,6 +7,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -16,7 +17,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppIcon from "../../components/AppIcon";
-import ClubCard from "../../components/ClubCard";
 import {
   ActiveClubOverviewScreen,
   ClubOverviewModal,
@@ -25,6 +25,7 @@ import {
 } from "../../components/JoinClubFlow";
 import { Colors } from "../../constants/Colors";
 import { supabase } from "../../src/lib/supabaseClient";
+import { getCurrentProfile } from "../../src/services/profileService";
 
 type ExtendedCircle = {
   id: string;
@@ -47,6 +48,35 @@ type ExtendedCircle = {
   }[];
 };
 
+function DashboardClubCard({
+  club,
+  onPress,
+}: {
+  club: ExtendedCircle;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.clubCard}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      <View style={styles.clubCardLeft}>
+        <Text style={styles.clubCardName} numberOfLines={1}>
+          {club.name}
+        </Text>
+        <Text style={styles.clubCardLabel}>Contribution Amount</Text>
+      </View>
+      <View style={styles.clubCardRight}>
+        <Text style={styles.clubCardStatus}>Active</Text>
+        <Text style={styles.clubCardAmount}>
+          ${Number(club.contribution_amount || 0).toFixed(0)} CAD
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function SectionHeader({
   title,
   expanded,
@@ -66,8 +96,8 @@ function SectionHeader({
       <View style={styles.sectionHeaderIcon}>
         <AppIcon
           name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-          size={20}
-          color={Colors.white}
+          size={18}
+          color="#EA6E6E"
         />
       </View>
     </TouchableOpacity>
@@ -84,6 +114,8 @@ export default function ClubsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState("Jamie");
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const [privateExpanded, setPrivateExpanded] = useState(true);
   const [publicExpanded, setPublicExpanded] = useState(true);
@@ -91,9 +123,7 @@ export default function ClubsScreen() {
   const [myClubs, setMyClubs] = useState<ExtendedCircle[]>([]);
   const [publicClubs, setPublicClubs] = useState<ExtendedCircle[]>([]);
 
-  const [selectedCircle, setSelectedCircle] = useState<ExtendedCircle | null>(
-    null
-  );
+  const [selectedCircle, setSelectedCircle] = useState<ExtendedCircle | null>(null);
   const [showOverview, setShowOverview] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
   const [showActiveClub, setShowActiveClub] = useState(false);
@@ -116,6 +146,13 @@ export default function ClubsScreen() {
         return;
       }
 
+      const profileRes = await getCurrentProfile();
+      if (profileRes.success && profileRes.data) {
+        const rawName =
+          profileRes.data.full_name || profileRes.data.username || "Jamie";
+        setFirstName(rawName.trim().split(" ")[0] || "Jamie");
+      }
+
       const { data: memberships, error: membershipsError } = await supabase
         .from("circle_members")
         .select("circle_id")
@@ -126,7 +163,6 @@ export default function ClubsScreen() {
         setMyClubs([]);
       } else {
         const circleIds = (memberships ?? []).map((m) => m.circle_id);
-
         if (circleIds.length === 0) {
           setMyClubs([]);
         } else {
@@ -183,14 +219,12 @@ export default function ClubsScreen() {
       publicClubs.find((c) => c.id === circleId) ||
       myClubs.find((c) => c.id === circleId) ||
       null;
-
     setSelectedCircle(circle);
     setShowAgreement(true);
   };
 
   const handleConfirmAgreementJoin = async () => {
     if (!selectedCircle) return;
-
     try {
       setAgreeJoining(true);
       setJoiningId(selectedCircle.id);
@@ -210,14 +244,13 @@ export default function ClubsScreen() {
         user_id: user.id,
       });
 
-      if (error) {
-        if (
-          !error.message.toLowerCase().includes("duplicate") &&
-          !error.message.toLowerCase().includes("unique")
-        ) {
-          Alert.alert("Unable to join club", error.message);
-          return;
-        }
+      if (
+        error &&
+        !error.message.toLowerCase().includes("duplicate") &&
+        !error.message.toLowerCase().includes("unique")
+      ) {
+        Alert.alert("Unable to join club", error.message);
+        return;
       }
 
       setShowAgreement(false);
@@ -244,9 +277,12 @@ export default function ClubsScreen() {
     [myClubs]
   );
 
-  const availablePublicClubs = useMemo(() => {
-    return publicClubs.filter((club) => !myClubIds.has(club.id));
-  }, [publicClubs, myClubIds]);
+  const availablePublicClubs = useMemo(
+    () => publicClubs.filter((club) => !myClubIds.has(club.id)),
+    [publicClubs, myClubIds]
+  );
+
+  const hasClubs = myClubs.length > 0;
 
   if (loading) {
     return (
@@ -294,119 +330,73 @@ export default function ClubsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
+        {/* Header */}
         <View style={styles.topBar}>
-          <TouchableOpacity
-            style={styles.topIconBtn}
-            onPress={() => router.back()}
-            activeOpacity={0.85}
-          >
-            <AppIcon name="arrow-back" size={24} color={Colors.textDark} />
-          </TouchableOpacity>
+          <Text style={styles.pageTitle}>Dashboard</Text>
+          <View style={styles.topRightIcons}>
+            <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85}>
+              <AppIcon name="chat-bubble-outline" size={21} color={Colors.textDark} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85}>
+              <AppIcon name="notifications-none" size={24} color={Colors.textDark} />
+              <View style={styles.notifyDot} />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-          <Text style={styles.pageTitle}>
-            {isExploreMode ? "Join a Public Club" : "Clubs"}
-          </Text>
+        {/* Welcome */}
+        <Text style={styles.welcomeText}>
+          {hasClubs ? `Welcome back, ${firstName}` : `Welcome, ${firstName}`}
+        </Text>
 
-          {isExploreMode ? (
-            <View style={styles.topRightIcons}>
-              <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85}>
-                <AppIcon name="chat-bubble-outline" size={21} color={Colors.textDark} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.topIconBtn} activeOpacity={0.85}>
-                <AppIcon name="notifications-none" size={24} color={Colors.textDark} />
-                <View style={styles.notifyDot} />
-              </TouchableOpacity>
-            </View>
-          ) : (
+        {/* Empty state */}
+        {!hasClubs && (
+          <View style={styles.emptyStateCard}>
+            <Text style={styles.emptyLead}>Boost your savings!</Text>
+            <Text style={styles.emptyCopy}>
+              Create or join a savings club to start saving together.
+            </Text>
             <TouchableOpacity
-              style={styles.createTopButton}
+              style={styles.emptyBtn}
               onPress={() => router.push("/(clubs)/create-club")}
               activeOpacity={0.85}
             >
-              <Text style={styles.createTopButtonText}>Create</Text>
+              <Text style={styles.emptyBtnText}>Create a new savings club</Text>
             </TouchableOpacity>
-          )}
-        </View>
+            <TouchableOpacity
+              style={styles.emptyBtnOutline}
+              onPress={() => router.push("/(clubs)/clubs?view=explore" as any)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.emptyBtnOutlineText}>Explore public savings clubs</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-        {isExploreMode ? (
+        {/* My clubs sections */}
+        {hasClubs && (
           <>
-            <Text style={styles.exploreIntro}>
-              Find community by joining one of our public savings clubs.
-            </Text>
-
-            <View style={styles.exploreTools}>
-              <View style={styles.filterPill}>
-                <AppIcon name="tune" size={15} color={Colors.textMid} />
-                <Text style={styles.filterPillText}>Filter</Text>
-              </View>
-
-              <View style={styles.sortPill}>
-                <Text style={styles.sortPillText}>Sort By: Most Recent</Text>
-                <AppIcon name="keyboard-arrow-down" size={18} color={Colors.textMid} />
-              </View>
-            </View>
-
-            <Text style={styles.resultsText}>{availablePublicClubs.length} clubs</Text>
-
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionBody}>
-                {availablePublicClubs.length > 0 ? (
-                  availablePublicClubs.map((club) => (
-                    <ClubCard
-                      key={`explore-${club.id}`}
-                      name={club.name}
-                      amount={`$${club.contribution_amount}`}
-                      status="Public"
-                      onPress={() => {
-                        setSelectedCircle(club);
-                        setShowOverview(true);
-                      }}
-                    />
-                  ))
-                ) : (
-                  <View style={styles.emptyBox}>
-                    <Text style={styles.emptyText}>
-                      No public clubs are available to join right now.
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </>
-        ) : (
-          <>
-            <Text style={styles.welcomeText}>Savings Clubs</Text>
-
             <SectionHeader
               title="Private Clubs"
               expanded={privateExpanded}
               onToggle={() => setPrivateExpanded((prev) => !prev)}
             />
-
             {privateExpanded && (
               <View style={styles.sectionCard}>
-                <View style={styles.sectionBody}>
-                  {myPrivateClubs.length > 0 ? (
-                    myPrivateClubs.map((club) => (
-                      <ClubCard
-                        key={club.id}
-                        name={club.name}
-                        amount={`$${club.contribution_amount}`}
-                        status="Active"
-                        onPress={() => {
-                          setSelectedCircle(club);
-                          setShowActiveClub(true);
-                        }}
-                      />
-                    ))
-                  ) : (
-                    <View style={styles.emptyBox}>
-                      <Text style={styles.emptyText}>
-                        You have not joined any private clubs yet.
-                      </Text>
-                    </View>
-                  )}
-                </View>
+                {myPrivateClubs.length > 0 ? (
+                  myPrivateClubs.map((club) => (
+                    <DashboardClubCard
+                      key={club.id}
+                      club={club}
+                      onPress={() => {
+                        setSelectedCircle(club);
+                        setShowActiveClub(true);
+                      }}
+                    />
+                  ))
+                ) : (
+                  <Text style={styles.emptyText}>No private savings clubs yet.</Text>
+                )}
               </View>
             )}
 
@@ -415,65 +405,69 @@ export default function ClubsScreen() {
               expanded={publicExpanded}
               onToggle={() => setPublicExpanded((prev) => !prev)}
             />
-
             {publicExpanded && (
               <View style={styles.sectionCard}>
-                <View style={styles.sectionBody}>
-                  {myPublicClubs.length > 0 &&
-                    myPublicClubs.map((club) => (
-                      <ClubCard
-                        key={`joined-${club.id}`}
-                        name={club.name}
-                        amount={`$${club.contribution_amount}`}
-                        status="Active"
-                        onPress={() => {
-                          setSelectedCircle(club);
-                          setShowActiveClub(true);
-                        }}
-                      />
-                    ))}
-
-                  {availablePublicClubs.length > 0 ? (
-                    availablePublicClubs.map((club) => (
-                      <View key={`public-${club.id}`}>
-                        <ClubCard
-                          name={club.name}
-                          amount={`$${club.contribution_amount}`}
-                          status="Public"
-                          onPress={() => {
-                            setSelectedCircle(club);
-                            setShowOverview(true);
-                          }}
-                        />
-
-                        <TouchableOpacity
-                          style={[
-                            styles.joinButton,
-                            joiningId === club.id && styles.joinButtonDisabled,
-                          ]}
-                          onPress={() => handleJoin(club.id)}
-                          disabled={joiningId === club.id}
-                          activeOpacity={0.85}
-                        >
-                          <Text style={styles.joinButtonText}>
-                            {joiningId === club.id ? "Joining..." : "Join Club"}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    ))
-                  ) : myPublicClubs.length === 0 ? (
-                    <View style={styles.emptyBox}>
-                      <Text style={styles.emptyText}>
-                        No public clubs available right now.
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
+                {myPublicClubs.length > 0 ? (
+                  myPublicClubs.map((club) => (
+                    <DashboardClubCard
+                      key={`joined-${club.id}`}
+                      club={club}
+                      onPress={() => {
+                        setSelectedCircle(club);
+                        setShowActiveClub(true);
+                      }}
+                    />
+                  ))
+                ) : (
+                  <Text style={styles.emptyText}>No public savings clubs yet.</Text>
+                )}
               </View>
             )}
           </>
         )}
       </ScrollView>
+
+      {/* FAB menu overlay */}
+      {menuVisible && (
+        <Pressable style={styles.menuOverlay} onPress={() => setMenuVisible(false)}>
+          <View style={styles.menuSheet}>
+            <Text style={styles.menuTitle}>Savings Clubs</Text>
+
+            <TouchableOpacity
+              style={styles.menuOption}
+              activeOpacity={0.85}
+              onPress={() => {
+                setMenuVisible(false);
+                router.push("/(clubs)/create-club");
+              }}
+            >
+              <Text style={styles.menuOptionText}>Create a new savings club</Text>
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            <TouchableOpacity
+              style={styles.menuOption}
+              activeOpacity={0.85}
+              onPress={() => {
+                setMenuVisible(false);
+                router.push("/(clubs)/clubs?view=explore" as any);
+              }}
+            >
+              <Text style={styles.menuOptionText}>Explore public savings clubs</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      )}
+
+      {/* FAB */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setMenuVisible((v) => !v)}
+        activeOpacity={0.85}
+      >
+        <AppIcon name={menuVisible ? "close" : "add"} size={28} color={Colors.white} />
+      </TouchableOpacity>
 
       <ClubOverviewModal
         visible={showOverview}
@@ -498,159 +492,48 @@ export default function ClubsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 20, paddingBottom: 40, gap: 16 },
+  container: { flex: 1, backgroundColor: "#F7F8F9" },
+  scroll: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 120,
+    gap: 14,
+  },
   loaderWrap: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: "#F7F8F9",
     justifyContent: "center",
     alignItems: "center",
   },
   loaderText: { marginTop: 12, fontSize: 14, color: Colors.textMid },
+
+  /* Header */
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.borderLight ?? "#E8EAF0",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  pageTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: Colors.textDark,
+    paddingLeft: 6,
   },
   topRightIcons: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
   },
   topIconBtn: {
     width: 36,
     height: 36,
     alignItems: "center",
     justifyContent: "center",
-  },
-  pageTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: Colors.textDark,
-  },
-  createTopButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  createTopButtonText: {
-    color: Colors.white,
-    fontWeight: "700",
-  },
-  welcomeText: {
-    fontSize: 30,
-    fontWeight: "800",
-    color: Colors.textDark,
-    lineHeight: 36,
-    marginBottom: 4,
-  },
-  exploreIntro: {
-    fontSize: 13,
-    color: Colors.textMid,
-    lineHeight: 18,
-    marginBottom: 2,
-  },
-  exploreTools: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  filterPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: Colors.white,
-  },
-  filterPillText: {
-    fontSize: 12,
-    color: Colors.textMid,
-    fontWeight: "600",
-  },
-  sortPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    backgroundColor: Colors.white,
-  },
-  sortPillText: {
-    fontSize: 12,
-    color: Colors.textMid,
-    fontWeight: "600",
-  },
-  resultsText: {
-    fontSize: 12,
-    color: Colors.textLight,
-    marginTop: -4,
-    marginBottom: -2,
-  },
-  sectionHeader: {
-    backgroundColor: Colors.primary,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  sectionHeaderText: {
-    color: Colors.white,
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  sectionHeaderIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#F47F7F",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sectionCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 12,
-  },
-  sectionBody: {
-    gap: 12,
-  },
-  emptyBox: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: 16,
-  },
-  emptyText: { fontSize: 14, color: Colors.textMid },
-  joinButton: {
-    marginTop: 8,
-    marginBottom: 6,
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  joinButtonDisabled: { opacity: 0.7 },
-  joinButtonText: {
-    color: Colors.white,
-    fontWeight: "700",
   },
   notifyDot: {
     position: "absolute",
@@ -660,5 +543,185 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 3.5,
     backgroundColor: "#EF4444",
+  },
+
+  /* Welcome */
+  welcomeText: {
+    fontSize: 36,
+    fontWeight: "800",
+    color: Colors.textDark,
+    lineHeight: 42,
+  },
+
+  /* Empty state */
+  emptyStateCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 20,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: Colors.borderLight ?? "#E8EAF0",
+  },
+  emptyLead: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: Colors.textDark,
+  },
+  emptyCopy: {
+    fontSize: 14,
+    color: Colors.textMid,
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  emptyBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  emptyBtnText: {
+    color: Colors.white,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  emptyBtnOutline: {
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    paddingVertical: 13,
+    alignItems: "center",
+  },
+  emptyBtnOutlineText: {
+    color: Colors.primary,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+
+  /* Section header */
+  sectionHeader: {
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.borderLight ?? "#E8EAF0",
+  },
+  sectionHeaderText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.textDark,
+  },
+  sectionHeaderIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#FDE8E8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* Section card */
+  sectionCard: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 12,
+    gap: 2,
+    borderWidth: 1,
+    borderColor: Colors.borderLight ?? "#E8EAF0",
+    marginTop: -8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: Colors.textMid,
+    padding: 8,
+  },
+
+  /* Club card */
+  clubCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F4",
+  },
+  clubCardLeft: { flex: 1 },
+  clubCardName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginBottom: 2,
+  },
+  clubCardLabel: {
+    fontSize: 12,
+    color: Colors.textMid,
+  },
+  clubCardRight: { alignItems: "flex-end" },
+  clubCardStatus: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.primary,
+    marginBottom: 2,
+  },
+  clubCardAmount: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textDark,
+  },
+
+  /* FAB */
+  fab: {
+    position: "absolute",
+    bottom: 90,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+  },
+
+  /* FAB menu */
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "flex-end",
+    zIndex: 10,
+  },
+  menuSheet: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+    gap: 4,
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: Colors.textDark,
+    marginBottom: 12,
+  },
+  menuOption: {
+    paddingVertical: 16,
+  },
+  menuOptionText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.textDark,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: Colors.borderLight ?? "#E8EAF0",
   },
 });

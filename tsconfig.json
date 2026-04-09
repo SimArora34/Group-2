@@ -1,4 +1,8 @@
 {
   "compilerOptions": {},
-  "exclude": ["ContribiiaApp/**", "node_modules"]
+  "exclude": [
+    "ContribiiaApp/**",
+    "node_modules"
+  ],
+  "extends": "expo/tsconfig.base"
 }
