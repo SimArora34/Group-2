@@ -8,6 +8,8 @@ import {
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import ScreenHeader from "../../components/ScreenHeader";
 import { withdraw } from "../../src/services/walletService";
 
 export default function CashAdvance() {
@@ -42,10 +44,10 @@ export default function CashAdvance() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Request Cash Advance</Text>
-
-      <Text style={styles.label}>Amount</Text>
+    <SafeAreaView style={styles.container} edges={["bottom"]}>
+      <ScreenHeader title="Cash Advance" />
+      <View style={styles.inner}>
+        <Text style={styles.label}>Amount</Text>
       <TextInput
         style={styles.input}
         placeholder="Enter amount"
@@ -63,13 +65,15 @@ export default function CashAdvance() {
           {submitting ? "Processing..." : "Request"}
         </Text>
       </TouchableOpacity>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: "#fff" },
   title: { fontSize: 22, fontWeight: "700", marginBottom: 20 },
+  inner: { flex: 1, padding: 20 },
   label: { fontSize: 14, marginBottom: 8, color: "#444" },
   input: {
     borderWidth: 1,

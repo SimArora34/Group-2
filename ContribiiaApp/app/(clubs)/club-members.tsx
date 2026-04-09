@@ -1,191 +1,242 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useMemo } from 'react';
+﻿import { router, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   FlatList,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppIcon from '../../components/AppIcon';
 import { Colors } from '../../constants/Colors';
-import mockData from '../../data/mockData.json';
+import { supabase } from '../../src/lib/supabaseClient';
 
-type Member = { name: string; initials: string; color: string };
-type PublicClub = {
-  id: string;
-  name: string;
-  contribution_amount: number;
-  contribution_frequency: string;
-  cycle_start_date: string;
-  max_members: number;
-  members: Member[];
-};
+const AVATAR_COLORS = [
+  '#5B82C0','#E07B54','#6AAB8E','#C06B8D',
+  '#8E6AC0','#C0A05B','#5BA8C0','#C05B5B',
+];
 
-const formatLongMonthDate = (date: Date): string =>
-  date.toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+type SlotItem =
+  | { type: 'you'; id: string; name: string; initials: string; color: string; username: string; isCreator: boolean }
+  | { type: 'member'; id: string; name: string; initials: string; color: string; username: string; isCreator: boolean }
+  | { type: 'open'; id: string };
 
 export default function ClubMembersScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [circleName, setCircleName] = useState('');
+  const [isOwner, setIsOwner] = useState(false);
+  const [slots, setSlots] = useState<SlotItem[]>([]);
+  const [removeTarget, setRemoveTarget] = useState<SlotItem | null>(null);
+  const [removing, setRemoving] = useState(false);
 
-  const club: PublicClub | undefined = useMemo(
-    () => ((mockData as any).publicClubs ?? []).find((c: PublicClub) => c.id === id),
-    [id],
-  );
+  const load = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from('circles')
+        .select('id, name, owner_id, total_positions, circle_members(id, user_id, order_position, profiles(full_name, username))')
+        .eq('id', id)
+        .single();
+      if (error || !data) return;
+      setCircleName(data.name);
+      setIsOwner(data.owner_id === user?.id);
+      const members = (data.circle_members ?? []).sort(
+        (a: any, b: any) => (a.order_position ?? 0) - (b.order_position ?? 0)
+      );
+      const filled: SlotItem[] = members.map((m: any, i: number) => {
+        const fullName: string = m.profiles?.full_name ?? `Member ${i + 1}`;
+        const initials = fullName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+        const isYou = m.user_id === user?.id;
+        return {
+          type: isYou ? 'you' : 'member',
+          id: m.id,
+          name: isYou ? `${fullName} (You)` : fullName,
+          initials,
+          color: isYou ? Colors.primary : AVATAR_COLORS[i % AVATAR_COLORS.length],
+          username: m.profiles?.username ?? '',
+          isCreator: m.user_id === data.owner_id,
+        } as SlotItem;
+      });
+      const total = data.total_positions ?? filled.length;
+      const openSlots: SlotItem[] = Array.from(
+        { length: Math.max(0, total - filled.length) },
+        (_, i) => ({ type: 'open', id: `open-${i}` })
+      );
+      setSlots([...filled, ...openSlots]);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
-  if (!club) return null;
+  useEffect(() => { load(); }, [load]);
 
-  const openSlots = club.max_members - club.members.length - 1; // -1 for you
-  const payoutDate = new Date(club.cycle_start_date);
-  payoutDate.setDate(1);
-  payoutDate.setMonth(payoutDate.getMonth() + 1);
+  const handleRemove = async () => {
+    if (!removeTarget || removeTarget.type === 'open' || removeTarget.type === 'you') return;
+    setRemoving(true);
+    const { error } = await supabase
+      .from('circle_members')
+      .delete()
+      .eq('id', removeTarget.id);
+    setRemoving(false);
+    setRemoveTarget(null);
+    if (error) { Alert.alert('Error', error.message); return; }
+    load();
+  };
 
-  const allSlots = [
-    { type: 'you' as const, name: 'You', initials: 'YO', color: Colors.primary, position: club.members.length + 1 },
-    ...club.members.map((m, i) => ({ type: 'member' as const, ...m, position: i + 1 })),
-    ...Array.from({ length: Math.max(0, openSlots) }, (_, i) => ({
-      type: 'open' as const,
-      name: 'Open',
-      initials: '',
-      color: '',
-      position: club.members.length + 2 + i,
-    })),
-  ];
+  const filtered = search.trim()
+    ? slots.filter(s => s.type !== 'open' && s.name.toLowerCase().includes(search.toLowerCase()))
+    : slots;
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top','bottom']}>
+        <View style={styles.center}><ActivityIndicator size="large" color={Colors.primary} /></View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.container} edges={['top','bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
           <AppIcon name="arrow-back" size={22} color={Colors.textDark} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Group Members</Text>
-        <View style={styles.headerBtn} />
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.headerBtn}>
+            <AppIcon name="chat-bubble-outline" size={22} color={Colors.textDark} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerBtn}>
+            <AppIcon name="notifications-none" size={22} color={Colors.textDark} />
+          </TouchableOpacity>
+        </View>
       </View>
 
+      <View style={styles.searchWrap}>
+        <AppIcon name="search" size={18} color={Colors.textLight} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search member's name or user id"
+          placeholderTextColor={Colors.textLight}
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
+
+      {isOwner && (
+        <TouchableOpacity style={styles.addMember} activeOpacity={0.8}>
+          <Text style={styles.addMemberText}>Add new member</Text>
+        </TouchableOpacity>
+      )}
+
       <FlatList
-        data={allSlots}
-        keyExtractor={(_, i) => String(i)}
+        data={filtered}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.row}
-            activeOpacity={item.type === 'open' ? 1 : 0.8}
-            disabled={item.type === 'open'}
-            onPress={() =>
-              router.push({
-                pathname: '/(clubs)/member-profile',
-                params: {
-                  clubId: club.id,
-                  color: item.type === 'you' ? Colors.primary : item.color,
-                  contribution: String(club.contribution_amount),
-                  frequency: club.contribution_frequency,
-                  initials: item.type === 'you' ? 'YO' : item.initials,
-                  name: item.name,
-                  payout: formatLongMonthDate(payoutDate),
-                  position: String(item.position),
-                  role: item.type === 'you' ? 'You' : 'Member',
-                },
-              })
-            }
-          >
-            <View style={styles.positionCircle}>
-              <Text style={styles.positionText}>{item.position}</Text>
-            </View>
-            {item.type === 'open' ? (
-              <View style={[styles.avatar, styles.avatarOpen]}>
-                <AppIcon name="person-outline" size={22} color={Colors.textLight} />
+        renderItem={({ item }) => {
+          if (item.type === 'open') {
+            return (
+              <View style={styles.row}>
+                <View style={[styles.avatar, styles.avatarOpen]}>
+                  <AppIcon name="person-outline" size={22} color={Colors.textLight} />
+                </View>
+                <View style={styles.nameBlock}>
+                  <Text style={styles.memberName}>Open</Text>
+                  <Text style={styles.memberUsername}>Slot available</Text>
+                </View>
               </View>
-            ) : (
+            );
+          }
+          return (
+            <View style={styles.row}>
               <View style={[styles.avatar, { backgroundColor: item.color }]}>
-                {item.type === 'you' ? (
-                  <AppIcon name="person" size={22} color={Colors.white} />
-                ) : (
-                  <Text style={styles.avatarText}>{item.initials}</Text>
-                )}
+                <Text style={styles.avatarText}>{item.initials}</Text>
               </View>
-            )}
-            <View style={styles.nameBlock}>
-              <Text style={styles.memberName}>
-                {item.name}
-                {item.type === 'you' && (
-                  <Text style={styles.youLabel}> (You)</Text>
-                )}
-              </Text>
-              <Text style={styles.memberStatus}>
-                {item.type === 'open' ? 'Slot available' : 'Member'}
-              </Text>
+              <View style={styles.nameBlock}>
+                <Text style={styles.memberName}>{item.name}</Text>
+                {item.username ? <Text style={styles.memberUsername}>{item.username}</Text> : null}
+              </View>
+              {item.isCreator ? (
+                <Text style={styles.creatorBadge}>Creator</Text>
+              ) : item.type === 'member' && isOwner ? (
+                <TouchableOpacity
+                  style={styles.removeBtn}
+                  activeOpacity={0.85}
+                  onPress={() => setRemoveTarget(item)}
+                >
+                  <Text style={styles.removeBtnText}>Remove</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
-            {item.type !== 'open' && (
-              <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>Active</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        )}
+          );
+        }}
       />
+
+      {/* Remove confirmation modal */}
+      {removeTarget && removeTarget.type === 'member' && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <TouchableOpacity style={styles.modalClose} onPress={() => setRemoveTarget(null)}>
+              <AppIcon name="close" size={20} color={Colors.textDark} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Remove member</Text>
+            <Text style={styles.modalBody}>
+              Are you sure you want to remove {removeTarget.name} from {circleName}?
+            </Text>
+            <TouchableOpacity
+              style={[styles.confirmBtn, removing && { opacity: 0.6 }]}
+              activeOpacity={0.85}
+              onPress={handleRemove}
+              disabled={removing}
+            >
+              {removing
+                ? <ActivityIndicator color={Colors.white} />
+                : <Text style={styles.confirmBtnText}>Confirm</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  headerBtn: { width: 36, alignItems: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.textDark },
-  list: { padding: 20 },
-  separator: { height: 1, backgroundColor: Colors.borderLight },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    gap: 12,
-  },
-  positionCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  positionText: { fontSize: 11, fontWeight: '700', color: Colors.primary },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarOpen: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
-  },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  headerBtn: { width: 36, alignItems: 'center', justifyContent: 'center' },
+  headerRight: { flexDirection: 'row' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.textDark, flex: 1, textAlign: 'center' },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, margin: 16, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#F4F4F6', borderRadius: 10 },
+  searchInput: { flex: 1, fontSize: 14, color: Colors.textDark },
+  addMember: { paddingHorizontal: 16, paddingBottom: 8 },
+  addMemberText: { color: Colors.primary, fontWeight: '700', fontSize: 14, textDecorationLine: 'underline' },
+  list: { paddingHorizontal: 16, paddingBottom: 40 },
+  separator: { height: 1, backgroundColor: '#F0F0F4' },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 },
+  avatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
+  avatarOpen: { backgroundColor: '#F4F4F6', borderWidth: 1.5, borderColor: Colors.border, borderStyle: 'dashed' },
   avatarText: { fontSize: 15, fontWeight: '700', color: Colors.white },
   nameBlock: { flex: 1 },
   memberName: { fontSize: 15, fontWeight: '600', color: Colors.textDark },
-  youLabel: { fontWeight: '400', color: Colors.primary },
-  memberStatus: { fontSize: 12, color: Colors.textLight, marginTop: 2 },
-  activeBadge: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  activeBadgeText: { fontSize: 12, fontWeight: '600', color: Colors.success },
+  memberUsername: { fontSize: 13, color: Colors.textMid, marginTop: 2 },
+  creatorBadge: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+  removeBtn: { backgroundColor: '#C43D2A', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
+  removeBtnText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
+  modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', zIndex: 20 },
+  modalSheet: { backgroundColor: Colors.white, borderRadius: 16, padding: 24, width: '82%', gap: 12 },
+  modalClose: { alignSelf: 'flex-end' },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.textDark },
+  modalBody: { fontSize: 14, color: Colors.textMid, lineHeight: 20 },
+  confirmBtn: { backgroundColor: Colors.primary, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+  confirmBtnText: { color: Colors.white, fontWeight: '700', fontSize: 16 },
 });

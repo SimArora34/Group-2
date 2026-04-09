@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { router } from 'expo-router';
 import { Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import AppIcon from '../../components/AppIcon';
@@ -35,7 +36,14 @@ export default function QrCodeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <AppIcon name="arrow-back" size={22} color={Colors.textDark} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>QR Code</Text>
+        <View style={styles.backBtn} />
+      </View>
       <View style={styles.body}>
         <Text style={styles.title}>Scan to pay</Text>
 
@@ -72,6 +80,9 @@ export default function QrCodeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.textDark },
+  backBtn: { width: 36, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, padding: 24, alignItems: 'center', gap: 20 },
   title: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
   qrBox: {

@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
+import AppIcon from "../../components/AppIcon";
 import {
     Alert,
     KeyboardAvoidingView,
@@ -60,7 +61,14 @@ export default function BillingAddressScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["bottom"]}>
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerBtn}>
+          <AppIcon name="arrow-back" size={22} color={Colors.textDark} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Billing Address</Text>
+        <View style={styles.headerBtn} />
+      </View>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -151,6 +159,9 @@ export default function BillingAddressScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.textDark },
+  headerBtn: { width: 36, alignItems: 'center', justifyContent: 'center' },
   loaderWrap: {
     flex: 1,
     backgroundColor: Colors.background,

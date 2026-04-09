@@ -309,3 +309,23 @@ export async function leaveCircle(
 
   return { success: true, data: { deleted: false } };
 }
+
+type UpdateCircleInput = {
+  contribution_amount?: number;
+  total_positions?: number;
+  frequency_number?: number;
+  frequency_unit?: string;
+  cycle_duration?: string;
+};
+
+export async function updateCircle(
+  circleId: UUID,
+  updates: UpdateCircleInput
+): Promise<ServiceResponse<null>> {
+  const { error } = await supabase
+    .from('circles')
+    .update(updates)
+    .eq('id', circleId);
+  if (error) return { success: false, error: error.message };
+  return { success: true, data: null };
+}

@@ -214,7 +214,8 @@ export default function ClubOverviewScreen({
         <View style={styles.settingsCard}>
           <View style={styles.settingsHeader}>
             <Text style={styles.settingsTitle}>Cycle Settings</Text>
-            <TouchableOpacity style={styles.collapseBtn} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.collapseBtn} activeOpacity={0.85}
+              onPress={() => router.push({ pathname: '/(clubs)/edit-club' as any, params: { id: circle?.id } })}>
               <AppIcon name="keyboard-arrow-up" size={18} color={Colors.white} />
             </TouchableOpacity>
           </View>

@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ScrollView } from "react-native";
+import ScreenHeader from "../../components/ScreenHeader";
 import { createCircle } from "../../src/services/circleService";
 import { Colors } from "../../constants/Colors";
 
@@ -57,7 +60,9 @@ export default function ClubConfirmationScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+      <ScreenHeader title="Review Club" />
+      <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Review Club</Text>
 
       <View style={styles.row}>
@@ -98,12 +103,14 @@ export default function ClubConfirmationScreen() {
       <TouchableOpacity style={styles.cancelBtn} onPress={() => router.back()}>
         <Text style={styles.cancelText}>Back</Text>
       </TouchableOpacity>
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: Colors.background },
+  safeArea: { flex: 1, backgroundColor: Colors.background },
+  container: { padding: 24 },
   title: { fontSize: 22, fontWeight: "800", color: Colors.textDark, marginBottom: 24 },
   row: {
     flexDirection: "row",
