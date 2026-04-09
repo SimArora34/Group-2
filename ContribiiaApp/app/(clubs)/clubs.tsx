@@ -1,9 +1,10 @@
 import {
   useFocusEffect,
   useLocalSearchParams,
+  useNavigation,
   useRouter,
 } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,11 +19,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppIcon from "../../components/AppIcon";
 import {
-  ActiveClubOverviewScreen,
   ClubOverviewModal,
-  GroupMembersScreen,
   MemberAgreementModal,
 } from "../../components/JoinClubFlow";
+import ClubOverviewScreen from "./club-overview";
 import { Colors } from "../../constants/Colors";
 import { supabase } from "../../src/lib/supabaseClient";
 import { getCurrentProfile } from "../../src/services/profileService";
@@ -45,6 +45,8 @@ type ExtendedCircle = {
     circle_id?: string;
     user_id?: string;
     joined_at?: string | null;
+    order_position?: number | null;
+    profiles?: { full_name?: string | null } | null;
   }[];
 };
 
@@ -106,6 +108,7 @@ function SectionHeader({
 
 export default function ClubsScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const params = useLocalSearchParams();
   const viewParam = Array.isArray(params.view) ? params.view[0] : params.view;
   const modeParam = Array.isArray(params.mode) ? params.mode[0] : params.mode;
@@ -127,8 +130,21 @@ export default function ClubsScreen() {
   const [showOverview, setShowOverview] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
   const [showActiveClub, setShowActiveClub] = useState(false);
-  const [showMembers, setShowMembers] = useState(false);
+  const [showExplore, setShowExplore] = useState(false);
   const [agreeJoining, setAgreeJoining] = useState(false);
+
+  useEffect(() => {
+    if (isExploreMode) setShowExplore(true);
+  }, [isExploreMode]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress' as any, () => {
+      setShowExplore(false);
+      setShowActiveClub(false);
+      setMenuVisible(false);
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const loadClubs = useCallback(async () => {
     try {
@@ -284,40 +300,116 @@ export default function ClubsScreen() {
 
   const hasClubs = myClubs.length > 0;
 
-  if (loading) {
+  if (showExplore) {
     return (
-      <SafeAreaView style={styles.loaderWrap}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loaderText}>Loading clubs...</Text>
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        {/* Explore header */}
+        <View style={styles.exploreHeader}>
+          <TouchableOpacity onPress={() => setShowExplore(false)} style={styles.exploreBackBtn}>
+            <AppIcon name="arrow-back" size={24} color={Colors.textDark} />
+          </TouchableOpacity>
+          <Text style={styles.exploreTitle}>Join a Public Club</Text>
+          <View style={{ width: 36 }} />
+        </View>
+
+        <Text style={styles.exploreSubtitle}>
+          Find community by joining one of our public savings clubs awaiting new members.
+        </Text>
+
+        <View style={styles.exploreToolbar}>
+          <TouchableOpacity style={styles.filterBtn} activeOpacity={0.8}>
+            <AppIcon name="filter-list" size={16} color={Colors.textDark} />
+            <Text style={styles.filterBtnText}>Filter</Text>
+          </TouchableOpacity>
+          <Text style={styles.clubCount}>{availablePublicClubs.length} clubs</Text>
+          <Text style={styles.sortLabel}>Sort By: <Text style={styles.sortValue}>Most Recent</Text></Text>
+        </View>
+
+        <ScrollView contentContainerStyle={styles.exploreScroll} showsVerticalScrollIndicator={false}>
+          {availablePublicClubs.length === 0 ? (
+            <Text style={styles.emptyText}>No public clubs available right now.</Text>
+          ) : (
+            availablePublicClubs.map((club) => (
+              <TouchableOpacity
+                key={club.id}
+                style={styles.exploreCard}
+                activeOpacity={0.85}
+                onPress={() => { setSelectedCircle(club); setShowOverview(true); }}
+              >
+                <View style={styles.exploreCardHeader}>
+                  <Text style={styles.exploreCardName}>{club.name}</Text>
+                  <Text style={styles.exploreCardMembers}>
+                    {club.total_members ?? 0} members joined
+                  </Text>
+                </View>
+                <View style={styles.exploreCardDetails}>
+                  <View style={styles.exploreDetailRow}>
+                    <Text style={styles.exploreDetailLabel}>Savings Goal</Text>
+                    <Text style={styles.exploreDetailValue}>
+                      {club.savings_goal ? `$${Number(club.savings_goal).toLocaleString()}` : '—'}
+                    </Text>
+                  </View>
+                  <View style={styles.exploreDetailRow}>
+                    <Text style={styles.exploreDetailLabel}>Contribution</Text>
+                    <Text style={styles.exploreDetailValue}>
+                      ${Number(club.contribution_amount ?? 0).toLocaleString()}{club.contribution_frequency ? `, every ${club.contribution_frequency}` : ''}
+                    </Text>
+                  </View>
+                  <View style={styles.exploreDetailRow}>
+                    <Text style={styles.exploreDetailLabel}>Duration</Text>
+                    <Text style={styles.exploreDetailValue}>
+                      {club.duration_months ? `${club.duration_months} months` : '—'}
+                    </Text>
+                  </View>
+                  <View style={[styles.exploreDetailRow, { borderBottomWidth: 0 }]}>
+                    <Text style={styles.exploreDetailLabel}>Cycle Start Date</Text>
+                    <Text style={styles.exploreDetailValue}>
+                      {club.cycle_start_date
+                        ? new Date(club.cycle_start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : '—'}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
+
+        <ClubOverviewModal
+          visible={showOverview}
+          circle={selectedCircle}
+          alreadyMember={selectedCircle ? myClubIds.has(selectedCircle.id) : false}
+          onClose={() => setShowOverview(false)}
+          onJoinPress={() => { setShowOverview(false); setShowAgreement(true); }}
+        />
+        <MemberAgreementModal
+          visible={showAgreement}
+          circle={selectedCircle}
+          joining={agreeJoining}
+          onConfirm={handleConfirmAgreementJoin}
+          onCancel={() => setShowAgreement(false)}
+        />
       </SafeAreaView>
     );
   }
 
   if (showActiveClub && selectedCircle) {
     return (
-      <ActiveClubOverviewScreen
+      <ClubOverviewScreen
         circle={selectedCircle}
-        onBack={() => setShowActiveClub(false)}
-        onOpenMembers={() => {
-          setShowActiveClub(false);
-          setShowMembers(true);
-        }}
-        onRequestCashAdvance={() => router.push("/(clubs)/cash-advance")}
-        onShowRecipient={() => {}}
-        onShowContributionSuccess={() => {}}
+        onBack={() => { setShowActiveClub(false); loadClubs(); }}
+        onOpenMembers={() => router.push({ pathname: '/(clubs)/club-members' as any, params: { id: selectedCircle.id } })}
+        onRequestCashAdvance={() => router.push('/(clubs)/cash-advance' as any)}
       />
     );
   }
 
-  if (showMembers && selectedCircle) {
+  if (loading) {
     return (
-      <GroupMembersScreen
-        circle={selectedCircle}
-        onBack={() => {
-          setShowMembers(false);
-          setShowActiveClub(true);
-        }}
-      />
+      <SafeAreaView style={styles.loaderWrap}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.loaderText}>Loading clubs...</Text>
+      </SafeAreaView>
     );
   }
 
@@ -365,7 +457,7 @@ export default function ClubsScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.emptyBtnOutline}
-              onPress={() => router.push("/(clubs)/clubs?view=explore" as any)}
+              onPress={() => setShowExplore(true)}
               activeOpacity={0.85}
             >
               <Text style={styles.emptyBtnOutlineText}>Explore public savings clubs</Text>
@@ -388,8 +480,9 @@ export default function ClubsScreen() {
                     <DashboardClubCard
                       key={club.id}
                       club={club}
-                      onPress={() => {
-                        setSelectedCircle(club);
+                      onPress={async () => {
+                        const { data } = await supabase.from('circles').select('*, circle_members(id, user_id, order_position, joined_at, profiles(full_name))').eq('id', club.id).single();
+                        setSelectedCircle((data ?? club) as ExtendedCircle);
                         setShowActiveClub(true);
                       }}
                     />
@@ -412,8 +505,9 @@ export default function ClubsScreen() {
                     <DashboardClubCard
                       key={`joined-${club.id}`}
                       club={club}
-                      onPress={() => {
-                        setSelectedCircle(club);
+                      onPress={async () => {
+                        const { data } = await supabase.from('circles').select('*, circle_members(id, user_id, order_position, joined_at, profiles(full_name))').eq('id', club.id).single();
+                        setSelectedCircle((data ?? club) as ExtendedCircle);
                         setShowActiveClub(true);
                       }}
                     />
@@ -427,37 +521,31 @@ export default function ClubsScreen() {
         )}
       </ScrollView>
 
-      {/* FAB menu overlay */}
+      {/* FAB menu */}
       {menuVisible && (
-        <Pressable style={styles.menuOverlay} onPress={() => setMenuVisible(false)}>
-          <View style={styles.menuSheet}>
-            <Text style={styles.menuTitle}>Savings Clubs</Text>
+        <View style={styles.menuFloating}>
+          <TouchableOpacity
+            style={styles.menuFloatBtn}
+            activeOpacity={0.85}
+            onPress={() => {
+              setMenuVisible(false);
+              router.push("/(clubs)/create-club");
+            }}
+          >
+            <Text style={styles.menuFloatBtnText}>Create a new savings club</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.menuOption}
-              activeOpacity={0.85}
-              onPress={() => {
-                setMenuVisible(false);
-                router.push("/(clubs)/create-club");
-              }}
-            >
-              <Text style={styles.menuOptionText}>Create a new savings club</Text>
-            </TouchableOpacity>
-
-            <View style={styles.menuDivider} />
-
-            <TouchableOpacity
-              style={styles.menuOption}
-              activeOpacity={0.85}
-              onPress={() => {
-                setMenuVisible(false);
-                router.push("/(clubs)/clubs?view=explore" as any);
-              }}
-            >
-              <Text style={styles.menuOptionText}>Explore public savings clubs</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
+          <TouchableOpacity
+            style={styles.menuFloatBtn}
+            activeOpacity={0.85}
+            onPress={() => {
+              setMenuVisible(false);
+              setShowExplore(true);
+            }}
+          >
+            <Text style={styles.menuFloatBtnText}>Explore public savings clubs</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* FAB */}
@@ -691,7 +779,29 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
 
-  /* FAB menu */
+  /* FAB floating menu */
+  menuFloating: {
+    position: "absolute",
+    bottom: 160,
+    left: 16,
+    right: 16,
+    gap: 10,
+  },
+  menuFloatBtn: {
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+    backgroundColor: Colors.white,
+  },
+  menuFloatBtnText: {
+    color: Colors.primary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  /* FAB menu (old – kept for reference) */
   menuOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.35)",
@@ -724,4 +834,51 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.borderLight ?? "#E8EAF0",
   },
+
+  /* Explore screen */
+  exploreHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: '#EBEBEB', backgroundColor: Colors.white,
+  },
+  exploreBackBtn: { width: 36, alignItems: 'center', justifyContent: 'center' },
+  exploreTitle: { fontSize: 18, fontWeight: '700', color: Colors.textDark },
+  exploreSubtitle: {
+    fontSize: 13, color: Colors.textMid, textAlign: 'center',
+    paddingHorizontal: 20, paddingVertical: 12, lineHeight: 19,
+  },
+  exploreToolbar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingBottom: 10,
+  },
+  filterBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    borderWidth: 1, borderColor: '#DADADA', borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 5, backgroundColor: Colors.white,
+  },
+  filterBtnText: { fontSize: 13, color: Colors.textDark, fontWeight: '500' },
+  clubCount: { fontSize: 13, color: Colors.textMid },
+  sortLabel: { fontSize: 12, color: Colors.textMid },
+  sortValue: { fontWeight: '700', color: Colors.textDark },
+  exploreScroll: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
+  exploreCard: {
+    backgroundColor: Colors.white, borderRadius: 14,
+    borderWidth: 1, borderColor: '#E4E4E4',
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    overflow: 'hidden',
+  },
+  exploreCardHeader: {
+    paddingHorizontal: 14, paddingTop: 13, paddingBottom: 8,
+    borderBottomWidth: 1, borderBottomColor: '#F0F0F0',
+  },
+  exploreCardName: { fontSize: 16, fontWeight: '700', color: Colors.textDark, marginBottom: 2 },
+  exploreCardMembers: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+  exploreCardDetails: { paddingHorizontal: 14, paddingVertical: 4 },
+  exploreDetailRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F4F4F4',
+  },
+  exploreDetailLabel: { fontSize: 13, color: Colors.textMid },
+  exploreDetailValue: { fontSize: 13, fontWeight: '600', color: Colors.textDark },
 });

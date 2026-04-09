@@ -221,3 +221,91 @@ export async function joinCircle(
     data: { circleId, userId: currentUserId },
   };
 }
+
+/**
+ * Leave a circle.
+ * - If the current user is the owner AND there are other members → transfer ownership
+ *   to the next member (lowest order_position, or earliest joined_at).
+ * - If the current user is the owner AND no other members → delete the circle entirely.
+ * - Otherwise → remove the member row and decrement total_members.
+ */
+export async function leaveCircle(
+  circleId: UUID
+): Promise<ServiceResponse<{ deleted: boolean }>> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { success: false, error: "User not authenticated" };
+  }
+
+  // Fetch the circle to check ownership
+  const { data: circle, error: circleError } = await supabase
+    .from("circles")
+    .select("id, owner_id")
+    .eq("id", circleId)
+    .single();
+
+  if (circleError || !circle) {
+    return { success: false, error: circleError?.message ?? "Circle not found" };
+  }
+
+  const isOwner = circle.owner_id === user.id;
+
+  if (isOwner) {
+    // Find other members
+    const { data: others } = await supabase
+      .from("circle_members")
+      .select("user_id, order_position, joined_at")
+      .eq("circle_id", circleId)
+      .neq("user_id", user.id)
+      .order("order_position", { ascending: true })
+      .limit(1);
+
+    if (!others || others.length === 0) {
+      // No other members — delete the entire circle
+      const { error: delError } = await supabase
+        .from("circles")
+        .delete()
+        .eq("id", circleId);
+      if (delError) return { success: false, error: delError.message };
+      return { success: true, data: { deleted: true } };
+    }
+
+    // Transfer ownership to the next member
+    const nextOwner = others[0];
+    const { error: transferError } = await supabase
+      .from("circles")
+      .update({ owner_id: nextOwner.user_id })
+      .eq("id", circleId);
+
+    if (transferError) return { success: false, error: transferError.message };
+  }
+
+  // Remove the member row
+  const { error: removeError } = await supabase
+    .from("circle_members")
+    .delete()
+    .eq("circle_id", circleId)
+    .eq("user_id", user.id);
+
+  if (removeError) return { success: false, error: removeError.message };
+
+  // Decrement total_members
+  const { data: updated } = await supabase
+    .from("circles")
+    .select("total_members")
+    .eq("id", circleId)
+    .single();
+
+  if (updated) {
+    await supabase
+      .from("circles")
+      .update({ total_members: Math.max(0, Number(updated.total_members) - 1) })
+      .eq("id", circleId);
+  }
+
+  return { success: true, data: { deleted: false } };
+}
