@@ -142,8 +142,10 @@ export default function WalletScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loaderContainer} edges={["top"]}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loaderText}>Loading wallet...</Text>
+        <View style={styles.loaderRow}>
+          <ActivityIndicator size="small" color={Colors.primary} />
+          <Text style={styles.loaderText}>Loading wallet...</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -334,7 +336,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  loaderText: { marginTop: 12, fontSize: 14, color: Colors.textMid },
+  loaderRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  loaderText: { fontSize: 14, color: Colors.textMid },
   header: {
     flexDirection: "row",
     alignItems: "center",
