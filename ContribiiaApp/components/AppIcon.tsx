@@ -21,6 +21,7 @@ const ICON_MAP: Record<string, IconConfig> = {
   "checkmark-circle": { family: "material", name: "check-circle" },
   "chevron-back": { family: "material", name: "arrow-back" },
   "chevron-down": { family: "material", name: "keyboard-arrow-down" },
+  "chevron-up": { family: "material", name: "keyboard-arrow-up" },
   close: { family: "material", name: "close" },
   "close-circle": { family: "material", name: "cancel" },
   "copy-outline": { family: "material", name: "content-copy" },
