@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -11,14 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppIcon from '../../components/AppIcon';
 import { Colors } from '../../constants/Colors';
-import mockData from '../../data/mockData.json';
-
-type PublicClub = {
-  id: string;
-  name: string;
-  contribution_amount: number;
-  contribution_frequency: string;
-};
+import { supabase } from '../../src/lib/supabaseClient';
 
 const formatCurrency = (value: number): string => `$${value.toLocaleString()} CAD`;
 
@@ -35,13 +28,15 @@ export default function MemberProfileScreen() {
     role?: string;
   }>();
 
-  const club = useMemo(
-    () =>
-      ((mockData as any).publicClubs ?? []).find(
-        (c: PublicClub) => c.id === params.clubId,
-      ) as PublicClub | undefined,
-    [params.clubId],
-  );
+  const [club, setClub] = useState<any>(null);
+
+  useEffect(() => {
+    if (!params.clubId) return;
+    (async () => {
+      const { data } = await supabase.from('circles').select('*').eq('id', params.clubId).single();
+      if (data) setClub(data);
+    })();
+  }, [params.clubId]);
 
   const name = params.name || 'Member';
   const initials =

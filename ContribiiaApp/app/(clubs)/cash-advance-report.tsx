@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,32 +11,57 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppIcon from '../../components/AppIcon';
 import { Colors } from '../../constants/Colors';
-import mockData from '../../data/mockData.json';
+import { supabase } from '../../src/lib/supabaseClient';
 
-type PublicClub = {
-  id: string;
-  name: string;
-  contribution_amount: number;
-  contribution_frequency: string;
-  max_members: number;
-  duration_months: number;
-  members: { name: string; initials: string; color: string }[];
-};
+const AVATAR_COLORS = [
+  '#5B82C0','#E07B54','#6AAB8E','#C06B8D',
+  '#8E6AC0','#C0A05B','#5BA8C0','#C05B5B',
+];
 
 export default function CashAdvanceReportScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [club, setClub] = useState<any>(null);
+  const [members, setMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const club: PublicClub | undefined = useMemo(
-    () => ((mockData as any).publicClubs ?? []).find((c: PublicClub) => c.id === id),
-    [id],
-  );
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      const [circleRes, cmRes] = await Promise.all([
+        supabase.from('circles').select('*').eq('id', id).single(),
+        supabase.from('circle_members').select('*').eq('circle_id', id),
+      ]);
+      if (circleRes.data) setClub(circleRes.data);
+      const rows = cmRes.data ?? [];
+      if (rows.length > 0) {
+        const userIds = rows.map((m: any) => m.user_id).filter(Boolean);
+        const { data: profileRows } = await supabase.from('profiles').select('id, full_name').in('id', userIds);
+        const profileMap = new Map((profileRows ?? []).map((p: any) => [p.id, p]));
+        setMembers(rows.map((m: any) => ({
+          ...m,
+          name: profileMap.get(m.user_id)?.full_name ?? 'Member',
+          initials: (profileMap.get(m.user_id)?.full_name ?? 'M').split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2),
+          color: AVATAR_COLORS[(m.order_position ?? 0) % AVATAR_COLORS.length],
+        })));
+      }
+      setLoading(false);
+    })();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ActivityIndicator style={{ flex: 1 }} color={Colors.primary} />
+      </SafeAreaView>
+    );
+  }
 
   if (!club) return null;
 
-  const totalPool = club.contribution_amount * club.max_members;
+  const totalPool = club.contribution_amount * (club.total_positions ?? members.length);
   // Advance = 80% of their round payout, repayable over remaining months
   const advanceAmount = Math.round(totalPool * 0.8);
-  const repaymentAmount = Math.round((advanceAmount * 1.05) / club.duration_months);
+  const repaymentAmount = Math.round((advanceAmount * 1.05) / (club.duration_months ?? 1));
 
   const today = new Date();
   const fmt = (d: Date) =>
@@ -124,8 +150,8 @@ export default function CashAdvanceReportScreen() {
         {/* Members */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Club Members</Text>
-          {club.members.map((m, i) => (
-            <View key={i} style={[styles.memberRow, i === club.members.length - 1 && styles.detailRowLast]}>
+          {members.map((m, i) => (
+            <View key={m.user_id ?? i} style={[styles.memberRow, i === members.length - 1 && styles.detailRowLast]}>
               <View style={[styles.memberDot, { backgroundColor: m.color }]}>
                 <Text style={styles.memberDotText}>{m.initials[0]}</Text>
               </View>

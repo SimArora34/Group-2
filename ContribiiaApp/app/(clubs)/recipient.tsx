@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -9,28 +10,38 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppIcon from '../../components/AppIcon';
 import { Colors } from '../../constants/Colors';
-import mockData from '../../data/mockData.json';
-
-type PublicClub = {
-  id: string;
-  name: string;
-  contribution_amount: number;
-  contribution_frequency: string;
-  max_members: number;
-  duration_months: number;
-};
+import { supabase } from '../../src/lib/supabaseClient';
 
 export default function RecipientScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [club, setClub] = useState<any>(null);
+  const [memberCount, setMemberCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const club: PublicClub | undefined = useMemo(
-    () => ((mockData as any).publicClubs ?? []).find((c: PublicClub) => c.id === id),
-    [id],
-  );
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      const [circleRes, cmRes] = await Promise.all([
+        supabase.from('circles').select('*').eq('id', id).single(),
+        supabase.from('circle_members').select('id').eq('circle_id', id),
+      ]);
+      if (circleRes.data) setClub(circleRes.data);
+      setMemberCount(cmRes.data?.length ?? 0);
+      setLoading(false);
+    })();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ActivityIndicator style={{ flex: 1 }} color={Colors.primary} />
+      </SafeAreaView>
+    );
+  }
 
   if (!club) return null;
 
-  const totalPayout = club.contribution_amount * club.max_members;
+  const totalPayout = club.contribution_amount * (club.total_positions ?? memberCount);
   const today = new Date();
   const fmt = (d: Date) =>
     d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -78,7 +89,7 @@ export default function RecipientScreen() {
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Contributions Collected</Text>
-            <Text style={styles.detailValue}>{club.max_members} members</Text>
+            <Text style={styles.detailValue}>{club.total_positions ?? memberCount} members</Text>
           </View>
           <View style={[styles.detailRow, styles.detailRowLast]}>
             <Text style={styles.detailLabel}>Amount per Member</Text>

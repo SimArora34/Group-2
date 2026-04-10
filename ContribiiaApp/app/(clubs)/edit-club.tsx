@@ -44,6 +44,11 @@ export default function EditClubScreen() {
   const [memberLimit, setMemberLimit] = useState('');
   const [frequency, setFrequency] = useState('monthly');
   const [cycleDuration, setCycleDuration] = useState('12 Months');
+  const [cycleStartDate, setCycleStartDate] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
+  const [pickerMonth, setPickerMonth] = useState(new Date().getMonth());
+  const [pickerDay, setPickerDay] = useState(new Date().getDate());
 
   // Dropdown visibility
   const [showFrequency, setShowFrequency] = useState(false);
@@ -59,6 +64,7 @@ export default function EditClubScreen() {
     memberLimit: string;
     frequency: string;
     cycleDuration: string;
+    cycleStartDate: string;
   } | null>(null);
 
   useEffect(() => {
@@ -67,7 +73,7 @@ export default function EditClubScreen() {
       setLoading(true);
       const { data, error } = await supabase
         .from('circles')
-        .select('name, contribution_amount, total_positions, contribution_frequency, duration_months')
+        .select('name, contribution_amount, total_positions, contribution_frequency, duration_months, cycle_start_date')
         .eq('id', id)
         .single();
       setLoading(false);
@@ -76,12 +82,14 @@ export default function EditClubScreen() {
       const ml = String(data.total_positions ?? '');
       const freq = data.contribution_frequency ?? 'monthly';
       const cd = monthsToLabel(data.duration_months);
+      const csd = data.cycle_start_date ?? '';
       setCircleName(data.name ?? '');
       setContributionAmount(ca);
       setMemberLimit(ml);
       setFrequency(freq);
       setCycleDuration(cd);
-      original.current = { contributionAmount: ca, memberLimit: ml, frequency: freq, cycleDuration: cd };
+      setCycleStartDate(csd);
+      original.current = { contributionAmount: ca, memberLimit: ml, frequency: freq, cycleDuration: cd, cycleStartDate: csd };
     })();
   }, [id]);
 
@@ -109,6 +117,10 @@ export default function EditClubScreen() {
       updates.duration_months = durationToMonths(cycleDuration);
       diff.push({ label: 'Cycle Duration', from: original.current?.cycleDuration ?? '', to: cycleDuration });
     }
+    if (cycleStartDate !== original.current?.cycleStartDate) {
+      updates.cycle_start_date = cycleStartDate || null;
+      diff.push({ label: 'Cycle Start Date', from: original.current?.cycleStartDate || 'Not set', to: cycleStartDate || 'Not set' });
+    }
 
     if (Object.keys(updates).length === 0) {
       setSaving(false);
@@ -123,7 +135,7 @@ export default function EditClubScreen() {
       return;
     }
     // Update originals
-    original.current = { contributionAmount, memberLimit, frequency, cycleDuration };
+    original.current = { contributionAmount, memberLimit, frequency, cycleDuration, cycleStartDate };
     setChangedValues(diff);
     setShowSuccess(true);
   };
@@ -200,6 +212,28 @@ export default function EditClubScreen() {
               <AppIcon name="keyboard-arrow-down" size={18} color={Colors.textDark} />
             </TouchableOpacity>
           </View>
+
+          {/* Cycle Start Date */}
+          <Text style={styles.sectionLabel}>Cycle Start Date:</Text>
+          <TouchableOpacity
+            style={styles.inputWrap}
+            onPress={() => {
+              if (cycleStartDate) {
+                const parts = cycleStartDate.split('-');
+                if (parts.length === 3) {
+                  setPickerYear(Number(parts[0]));
+                  setPickerMonth(Number(parts[1]) - 1);
+                  setPickerDay(Number(parts[2]));
+                }
+              }
+              setShowDatePicker(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.input, { color: cycleStartDate ? Colors.textDark : Colors.textLight }]}>
+              {cycleStartDate || 'Select a date'}
+            </Text>
+          </TouchableOpacity>
 
           {/* Edit Participants */}
           <TouchableOpacity
@@ -296,6 +330,60 @@ export default function EditClubScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Date Picker Modal */}
+      <Modal visible={showDatePicker} transparent animationType="fade" onRequestClose={() => setShowDatePicker(false)}>
+        <TouchableOpacity style={styles.dateOverlay} activeOpacity={1} onPress={() => setShowDatePicker(false)}>
+          <View style={styles.dateSheet} onStartShouldSetResponder={() => true}>
+            <Text style={styles.dateSheetTitle}>Select Cycle Start Date</Text>
+            <View style={styles.datePickerRow}>
+              <View style={styles.dateCol}>
+                <Text style={styles.dateColLabel}>Month</Text>
+                <ScrollView style={styles.dateScroll} showsVerticalScrollIndicator={false}>
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <TouchableOpacity key={i} style={[styles.dateOption, pickerMonth === i && styles.dateOptionActive]} onPress={() => setPickerMonth(i)}>
+                      <Text style={[styles.dateOptionText, pickerMonth === i && styles.dateOptionTextActive]}>
+                        {new Date(2000, i).toLocaleString('en-US', { month: 'short' })}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              <View style={styles.dateCol}>
+                <Text style={styles.dateColLabel}>Day</Text>
+                <ScrollView style={styles.dateScroll} showsVerticalScrollIndicator={false}>
+                  {Array.from({ length: new Date(pickerYear, pickerMonth + 1, 0).getDate() }, (_, i) => (
+                    <TouchableOpacity key={i} style={[styles.dateOption, pickerDay === i + 1 && styles.dateOptionActive]} onPress={() => setPickerDay(i + 1)}>
+                      <Text style={[styles.dateOptionText, pickerDay === i + 1 && styles.dateOptionTextActive]}>{i + 1}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+              <View style={styles.dateCol}>
+                <Text style={styles.dateColLabel}>Year</Text>
+                <ScrollView style={styles.dateScroll} showsVerticalScrollIndicator={false}>
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const y = new Date().getFullYear() + i;
+                    return (
+                      <TouchableOpacity key={y} style={[styles.dateOption, pickerYear === y && styles.dateOptionActive]} onPress={() => setPickerYear(y)}>
+                        <Text style={[styles.dateOptionText, pickerYear === y && styles.dateOptionTextActive]}>{y}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.dateConfirmBtn} onPress={() => {
+              const mm = String(pickerMonth + 1).padStart(2, '0');
+              const dd = String(pickerDay).padStart(2, '0');
+              setCycleStartDate(`${pickerYear}-${mm}-${dd}`);
+              setShowDatePicker(false);
+            }}>
+              <Text style={styles.dateConfirmText}>Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -340,5 +428,19 @@ const styles = StyleSheet.create({
   diffLabel: { fontSize: 13, color: Colors.textMid, fontWeight: '600' },
   diffOld: { fontSize: 13, color: '#C43D2A', textDecorationLine: 'line-through' },
   diffNew: { fontSize: 13, color: Colors.primary, fontWeight: '700' },
+  // Date picker
+  dateOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  dateSheet: { width: '85%', backgroundColor: Colors.white, borderRadius: 16, padding: 20, maxHeight: 420 },
+  dateSheetTitle: { fontSize: 17, fontWeight: '700', color: Colors.textDark, textAlign: 'center', marginBottom: 14 },
+  datePickerRow: { flexDirection: 'row', gap: 10 },
+  dateCol: { flex: 1, alignItems: 'center' },
+  dateColLabel: { fontSize: 12, fontWeight: '600', color: Colors.textMid, marginBottom: 6 },
+  dateScroll: { maxHeight: 200 },
+  dateOption: { paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, alignItems: 'center', marginBottom: 2 },
+  dateOptionActive: { backgroundColor: Colors.primaryLight },
+  dateOptionText: { fontSize: 14, color: Colors.textMid, fontWeight: '500' },
+  dateOptionTextActive: { color: Colors.primary, fontWeight: '700' },
+  dateConfirmBtn: { marginTop: 16, backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  dateConfirmText: { color: Colors.white, fontWeight: '700', fontSize: 15 },
   // Shared (for textLight)
 } as const);

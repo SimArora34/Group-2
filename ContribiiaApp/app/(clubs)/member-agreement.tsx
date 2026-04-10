@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,35 +11,41 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppIcon from '../../components/AppIcon';
 import { Colors } from '../../constants/Colors';
-import mockData from '../../data/mockData.json';
+import { supabase } from '../../src/lib/supabaseClient';
 import { joinCircle } from '../../src/services/circleService';
-
-type PublicClub = {
-  id: string;
-  name: string;
-  contribution_amount: number;
-  contribution_frequency: string;
-  duration_months: number;
-};
 
 export default function MemberAgreementScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [agreed, setAgreed] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [club, setClub] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const club: PublicClub | undefined = useMemo(
-    () => ((mockData as any).publicClubs ?? []).find((c: PublicClub) => c.id === id),
-    [id],
-  );
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      const { data } = await supabase.from('circles').select('*').eq('id', id).single();
+      if (data) setClub(data);
+      setLoading(false);
+    })();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ActivityIndicator style={{ flex: 1 }} color={Colors.primary} />
+      </SafeAreaView>
+    );
+  }
 
   if (!club) return null;
 
   const handleJoin = async () => {
-    if (!agreed || joining) return;
+    if (!agreed || joining || !id) return;
     setJoining(true);
-    await joinCircle(club.id, 'current-user');
+    await joinCircle(id);
     setJoining(false);
-    router.replace({ pathname: '/(clubs)/joined-club', params: { id: club.id } });
+    router.replace({ pathname: '/(clubs)/joined-club', params: { id } });
   };
 
   return (

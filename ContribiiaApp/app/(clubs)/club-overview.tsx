@@ -60,9 +60,14 @@ const nextContrib = (start: Date, freq: FrequencyConfig, now: Date): Date => {
   while (d <= today) d = addFreq(d, freq);
   return d;
 };
-const timelineDates = (start: Date, count: number): Date[] => {
-  const base = new Date(start); base.setDate(1);
-  return Array.from({ length: count }, (_, i) => { const m = new Date(base); m.setMonth(base.getMonth() + i); return m; });
+const timelineDates = (start: Date, count: number, f: FrequencyConfig): Date[] => {
+  const dates: Date[] = [];
+  let d = new Date(start);
+  for (let i = 0; i < count; i++) {
+    dates.push(new Date(d));
+    d = addFreq(d, f);
+  }
+  return dates;
 };
 
 export default function ClubOverviewScreen({
@@ -148,14 +153,22 @@ export default function ClubOverviewScreen({
     loadMembers();
     return () => { cancelled = true; };
   }, [circle?.id]);
-  const cycleStart = useMemo(() => circle?.cycle_start_date ? new Date(circle.cycle_start_date) : new Date(), [circle]);
-  const daysLeft = useMemo(() => Math.max(0, daysDiff(today, cycleStart)), [today, cycleStart]);
+  const cycleStart = useMemo(() => circle?.cycle_start_date ? new Date(circle.cycle_start_date) : null, [circle]);
+  const hasCycleDate = cycleStart !== null;
+  const cycleStarted = hasCycleDate && cycleStart <= today;
+  const daysLeft = useMemo(() => hasCycleDate ? Math.max(0, daysDiff(today, cycleStart)) : 0, [today, cycleStart, hasCycleDate]);
   const freq = useMemo(() => parseFreq(circle?.contribution_frequency ?? 'monthly'), [circle]);
-  const nextDate = useMemo(() => nextContrib(cycleStart, freq, today), [cycleStart, freq, today]);
+  const effectiveCycleStart = cycleStart ?? today;
+  const nextDate = useMemo(() => nextContrib(effectiveCycleStart, freq, today), [effectiveCycleStart, freq, today]);
   const nextDays = useMemo(() => Math.max(0, daysDiff(today, nextDate)), [today, nextDate]);
   const payoutDate = useMemo(() => {
-    const d = new Date(cycleStart); d.setDate(1); d.setMonth(d.getMonth() + 1); return d;
-  }, [cycleStart]);
+    // Compute payout based on the current user's order_position
+    const myMember = liveMembers.find((m: any) => m.user_id === currentUserId);
+    const position = myMember?.order_position ?? 1;
+    let d = new Date(effectiveCycleStart);
+    for (let i = 0; i < position; i++) d = addFreq(d, freq);
+    return d;
+  }, [effectiveCycleStart, freq, currentUserId, liveMembers]);
 
   const members: { name: string; initials: string; color: string; userId: string }[] = useMemo(() => {
     return liveMembers.map((m: any, i: number) => {
@@ -179,12 +192,13 @@ export default function ClubOverviewScreen({
     });
   }, [circle, members, currentUserId]);
 
-  const tDates = useMemo(() => timelineDates(cycleStart, 6), [cycleStart]);
+  const timelineSlots = circle?.total_positions || circle?.duration_months || topParticipants.length || 4;
+  const tDates = useMemo(() => timelineDates(effectiveCycleStart, timelineSlots, freq), [effectiveCycleStart, timelineSlots, freq]);
   const tParticipants = useMemo((): Participant[] => {
-    const filled = topParticipants.filter(p => !p.isOpen).slice(0, 6);
-    while (filled.length < 6) filled.push({ color:'#D9D9D9', id:`topen-${filled.length}`, initials:'+', isOpen:true, name:'Open', order:filled.length+1 });
+    const filled = topParticipants.filter(p => !p.isOpen).slice(0, timelineSlots);
+    while (filled.length < timelineSlots) filled.push({ color:'#D9D9D9', id:`topen-${filled.length}`, initials:'+', isOpen:true, name:'Open', order:filled.length+1 });
     return filled;
-  }, [topParticipants]);
+  }, [topParticipants, timelineSlots]);
 
   const handleLeave = () => {
     const isOwner = currentUserId !== null && currentUserId === circle?.owner_id;
@@ -249,13 +263,27 @@ export default function ClubOverviewScreen({
         </View>
 
         <View style={styles.statusCard}>
-          <Text style={styles.statusTitle}>Group Not Yet Started</Text>
-          <Text style={styles.statusLabel}>Cycle Start at:</Text>
-          <View style={styles.statusDatePill}>
-            <Text style={styles.statusDateText}>
-              {fmtLong(cycleStart)} ({daysLeft} {daysLeft === 1 ? 'day' : 'days'} left)
-            </Text>
-          </View>
+          <Text style={styles.statusTitle}>
+            {!hasCycleDate
+              ? 'Cycle Date Not Set'
+              : liveMembers.length <= 1
+                ? 'Waiting for Members'
+                : cycleStarted
+                  ? 'Group Active'
+                  : 'Group Not Yet Started'}
+          </Text>
+          {hasCycleDate ? (
+            <>
+              <Text style={styles.statusLabel}>{cycleStarted ? 'Cycle started:' : 'Cycle Start at:'}</Text>
+              <View style={styles.statusDatePill}>
+                <Text style={styles.statusDateText}>
+                  {fmtLong(cycleStart!)}{!cycleStarted ? ` (${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left)` : ''}
+                </Text>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.statusLabel}>The group creator has not set a cycle start date yet.</Text>
+          )}
         </View>
 
         <View style={styles.membersSection}>

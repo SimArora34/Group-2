@@ -317,6 +317,7 @@ type UpdateCircleInput = {
   total_positions?: number;
   contribution_frequency?: string;
   duration_months?: number;
+  cycle_start_date?: string | null;
 };
 
 export async function updateCircle(

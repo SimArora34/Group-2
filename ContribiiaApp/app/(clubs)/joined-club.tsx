@@ -56,18 +56,28 @@ export default function JoinedClubScreen() {
     if (!id) return;
     setLoading(true);
 
-    const [{ data: { user } }, circleRes, membersRes] = await Promise.all([
+    const [{ data: { user } }, circleRes, cmRes] = await Promise.all([
       supabase.auth.getUser(),
       supabase.from('circles').select('*').eq('id', id).single(),
-      supabase
-        .from('circle_members')
-        .select('user_id, order_position, profiles(full_name)')
-        .eq('circle_id', id),
+      supabase.from('circle_members').select('*').eq('circle_id', id),
     ]);
 
     setCurrentUserId(user?.id ?? null);
     if (circleRes.data) setCircle(circleRes.data as Circle);
-    if (membersRes.data) setMembers(membersRes.data);
+
+    const rows = cmRes.data ?? [];
+    if (rows.length > 0) {
+      const userIds = rows.map((m: any) => m.user_id).filter(Boolean);
+      const { data: profileRows } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      const profileMap = new Map((profileRows ?? []).map((p: any) => [p.id, p]));
+      setMembers(rows.map((m: any) => ({ ...m, profiles: profileMap.get(m.user_id) ?? null })));
+    } else {
+      setMembers([]);
+    }
+
     setLoading(false);
   }, [id]);
 
@@ -145,9 +155,11 @@ export default function JoinedClubScreen() {
         <View style={styles.statusBanner}>
           <View style={styles.statusDot} />
           <Text style={styles.statusText}>
-            {members.length < (circle.total_positions ?? 0)
+            {members.length <= 1
               ? 'Waiting for members to join'
-              : 'Club is active'}
+              : circle.cycle_start_date && new Date(circle.cycle_start_date) <= new Date()
+                ? 'Club is active'
+                : `${members.length}/${circle.total_positions ?? '?'} members joined — waiting for cycle to start`}
           </Text>
         </View>
 
