@@ -403,6 +403,7 @@ export default function ClubsScreen() {
         onBack={() => { setShowActiveClub(false); loadClubs(); }}
         onOpenMembers={() => router.push({ pathname: '/(clubs)/club-members' as any, params: { id: selectedCircle.id } })}
         onRequestCashAdvance={() => router.push('/(clubs)/cash-advance' as any)}
+        onMakeContribution={() => router.push({ pathname: '/(clubs)/joined-club' as any, params: { id: selectedCircle.id } })}
       />
     );
   }

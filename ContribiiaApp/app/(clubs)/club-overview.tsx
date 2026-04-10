@@ -70,11 +70,13 @@ export default function ClubOverviewScreen({
   onBack,
   onOpenMembers,
   onRequestCashAdvance,
+  onMakeContribution,
 }: {
   circle: any;
   onBack: () => void;
   onOpenMembers: () => void;
   onRequestCashAdvance: () => void;
+  onMakeContribution?: () => void;
 }) {
   const [leaving, setLeaving] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -334,6 +336,13 @@ export default function ClubOverviewScreen({
           </View>
         </View>
 
+        {/* Make Contribution button */}
+        {!!onMakeContribution && (
+          <TouchableOpacity style={styles.contributeBtn} activeOpacity={0.85} onPress={onMakeContribution}>
+            <Text style={styles.contributeBtnText}>Make Contribution</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Leave button at bottom of scrollable content */}
         <TouchableOpacity style={[styles.leaveBtn, leaving && { opacity: 0.6 }]} activeOpacity={0.85}
           onPress={handleLeave} disabled={leaving}>
@@ -399,7 +408,9 @@ const styles = StyleSheet.create({
   timelineNodeText: { color:Colors.white, fontSize:11, fontWeight:'700' },
   timelineDateText: { marginTop:3, fontSize:11, color:Colors.textDark, fontWeight:'500' },
   actionsWrap: { position:'absolute', left:14, right:14, bottom:20 },
-  leaveBtn: { marginTop:24, backgroundColor:'#C43D2A', borderRadius:12, alignItems:'center', justifyContent:'center', paddingVertical:14 },
+  contributeBtn: { marginTop:16, backgroundColor: Colors.primary, borderRadius:12, alignItems:'center', justifyContent:'center', paddingVertical:14 },
+  contributeBtnText: { fontSize:15, fontWeight:'700', color:'#FFFFFF' },
+  leaveBtn: { marginTop:12, backgroundColor:'#C43D2A', borderRadius:12, alignItems:'center', justifyContent:'center', paddingVertical:14 },
   leaveBtnText: { color:Colors.white, fontSize:18, fontWeight:'700' },
   fab: { position:'absolute', right:20, bottom:20, width:64, height:64, borderRadius:32, backgroundColor:'#2AA4B8', alignItems:'center', justifyContent:'center', shadowColor:Colors.shadow, shadowOpacity:0.2, shadowRadius:5, shadowOffset:{width:0,height:2}, elevation:4 },
 });

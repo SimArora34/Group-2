@@ -69,7 +69,12 @@ export async function signOut(): Promise<ServiceResponse<null>> {
 export async function resetPassword(
   email: string,
 ): Promise<ServiceResponse<null>> {
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: false,
+    },
+  });
   if (error) return { success: false, error: error.message };
   return { success: true, data: null };
 }
@@ -81,7 +86,7 @@ export async function verifyOtp(
   const { error } = await supabase.auth.verifyOtp({
     email,
     token,
-    type: "recovery",
+    type: "email",
   });
   if (error) return { success: false, error: error.message };
   return { success: true, data: null };
