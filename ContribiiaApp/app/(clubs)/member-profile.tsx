@@ -222,6 +222,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     color: Colors.textMid,
+    flexShrink: 0,
   },
   value: {
     flex: 1,

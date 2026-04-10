@@ -315,9 +315,8 @@ export async function leaveCircle(
 type UpdateCircleInput = {
   contribution_amount?: number;
   total_positions?: number;
-  frequency_number?: number;
-  frequency_unit?: string;
-  cycle_duration?: string;
+  contribution_frequency?: string;
+  duration_months?: number;
 };
 
 export async function updateCircle(

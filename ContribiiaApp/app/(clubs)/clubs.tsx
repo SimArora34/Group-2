@@ -880,6 +880,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F4F4F4',
   },
-  exploreDetailLabel: { fontSize: 13, color: Colors.textMid, flex: 1 },
-  exploreDetailValue: { fontSize: 13, fontWeight: '600', color: Colors.textDark, flexShrink: 1, textAlign: 'right' },
+  exploreDetailLabel: { fontSize: 13, color: Colors.textMid, flexShrink: 0 },
+  exploreDetailValue: { fontSize: 13, fontWeight: '600', color: Colors.textDark, flex: 1, textAlign: 'right' },
 });

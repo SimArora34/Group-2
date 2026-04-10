@@ -19,8 +19,18 @@ import { Colors } from '../../constants/Colors';
 import { supabase } from '../../src/lib/supabaseClient';
 import { updateCircle } from '../../src/services/circleService';
 
-const FREQ_UNITS = ['days', 'weeks', 'months'];
+const FREQ_OPTIONS = ['weekly', 'bi-weekly', 'monthly'];
 const CYCLE_DURATIONS = ['3 Months', '6 Months', '9 Months', '12 Months', '18 Months', '24 Months'];
+
+function durationToMonths(label: string): number {
+  const num = parseInt(label, 10);
+  return isNaN(num) ? 12 : num;
+}
+
+function monthsToLabel(m: number | null | undefined): string {
+  if (!m) return '12 Months';
+  return `${m} Months`;
+}
 
 export default function EditClubScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,12 +42,11 @@ export default function EditClubScreen() {
   // Editable fields
   const [contributionAmount, setContributionAmount] = useState('');
   const [memberLimit, setMemberLimit] = useState('');
-  const [freqNumber, setFreqNumber] = useState('1');
-  const [freqUnit, setFreqUnit] = useState('weeks');
+  const [frequency, setFrequency] = useState('monthly');
   const [cycleDuration, setCycleDuration] = useState('12 Months');
 
   // Dropdown visibility
-  const [showFreqUnit, setShowFreqUnit] = useState(false);
+  const [showFrequency, setShowFrequency] = useState(false);
   const [showCycleDuration, setShowCycleDuration] = useState(false);
 
   // Success modal
@@ -48,8 +57,7 @@ export default function EditClubScreen() {
   const original = useRef<{
     contributionAmount: string;
     memberLimit: string;
-    freqNumber: string;
-    freqUnit: string;
+    frequency: string;
     cycleDuration: string;
   } | null>(null);
 
@@ -59,23 +67,21 @@ export default function EditClubScreen() {
       setLoading(true);
       const { data, error } = await supabase
         .from('circles')
-        .select('name, contribution_amount, total_positions, frequency_number, frequency_unit, cycle_duration')
+        .select('name, contribution_amount, total_positions, contribution_frequency, duration_months')
         .eq('id', id)
         .single();
       setLoading(false);
       if (error || !data) return;
       const ca = String(data.contribution_amount ?? '');
       const ml = String(data.total_positions ?? '');
-      const fn = String(data.frequency_number ?? '1');
-      const fu = data.frequency_unit ?? 'weeks';
-      const cd = data.cycle_duration ?? '12 Months';
+      const freq = data.contribution_frequency ?? 'monthly';
+      const cd = monthsToLabel(data.duration_months);
       setCircleName(data.name ?? '');
       setContributionAmount(ca);
       setMemberLimit(ml);
-      setFreqNumber(fn);
-      setFreqUnit(fu);
+      setFrequency(freq);
       setCycleDuration(cd);
-      original.current = { contributionAmount: ca, memberLimit: ml, freqNumber: fn, freqUnit: fu, cycleDuration: cd };
+      original.current = { contributionAmount: ca, memberLimit: ml, frequency: freq, cycleDuration: cd };
     })();
   }, [id]);
 
@@ -95,14 +101,12 @@ export default function EditClubScreen() {
       updates.total_positions = ml;
       diff.push({ label: 'Member Limit', from: original.current?.memberLimit ?? '', to: String(ml) });
     }
-    const fn = parseInt(freqNumber, 10);
-    if (!isNaN(fn) && (freqNumber !== original.current?.freqNumber || freqUnit !== original.current?.freqUnit)) {
-      updates.frequency_number = fn;
-      updates.frequency_unit = freqUnit;
-      diff.push({ label: 'Frequency', from: `${original.current?.freqNumber} ${original.current?.freqUnit}`, to: `${fn} ${freqUnit}` });
+    if (frequency !== original.current?.frequency) {
+      updates.contribution_frequency = frequency;
+      diff.push({ label: 'Frequency', from: original.current?.frequency ?? '', to: frequency });
     }
     if (cycleDuration !== original.current?.cycleDuration) {
-      updates.cycle_duration = cycleDuration;
+      updates.duration_months = durationToMonths(cycleDuration);
       diff.push({ label: 'Cycle Duration', from: original.current?.cycleDuration ?? '', to: cycleDuration });
     }
 
@@ -119,7 +123,7 @@ export default function EditClubScreen() {
       return;
     }
     // Update originals
-    original.current = { contributionAmount, memberLimit, freqNumber, freqUnit, cycleDuration };
+    original.current = { contributionAmount, memberLimit, frequency, cycleDuration };
     setChangedValues(diff);
     setShowSuccess(true);
   };
@@ -181,18 +185,9 @@ export default function EditClubScreen() {
           {/* Contribution Frequency */}
           <Text style={styles.sectionLabel}>Choosing contribution frequency:</Text>
           <View style={styles.freqRow}>
-            <Text style={styles.freqLabel}>Contribute every</Text>
-            <View style={styles.freqInputWrap}>
-              <TextInput
-                style={styles.freqInput}
-                value={freqNumber}
-                onChangeText={setFreqNumber}
-                keyboardType="number-pad"
-                maxLength={3}
-              />
-            </View>
-            <TouchableOpacity style={styles.dropdown} onPress={() => setShowFreqUnit(true)} activeOpacity={0.8}>
-              <Text style={styles.dropdownText}>{freqUnit}</Text>
+            <Text style={styles.freqLabel}>Contribute</Text>
+            <TouchableOpacity style={styles.dropdown} onPress={() => setShowFrequency(true)} activeOpacity={0.8}>
+              <Text style={styles.dropdownText}>{frequency.charAt(0).toUpperCase() + frequency.slice(1)}</Text>
               <AppIcon name="keyboard-arrow-down" size={18} color={Colors.textDark} />
             </TouchableOpacity>
           </View>
@@ -238,17 +233,17 @@ export default function EditClubScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Frequency Unit Picker Modal */}
-      <Modal visible={showFreqUnit} transparent animationType="fade" onRequestClose={() => setShowFreqUnit(false)}>
-        <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setShowFreqUnit(false)}>
+      {/* Frequency Picker Modal */}
+      <Modal visible={showFrequency} transparent animationType="fade" onRequestClose={() => setShowFrequency(false)}>
+        <TouchableOpacity style={styles.pickerOverlay} activeOpacity={1} onPress={() => setShowFrequency(false)}>
           <View style={styles.pickerSheet}>
-            {FREQ_UNITS.map(u => (
+            {FREQ_OPTIONS.map(f => (
               <TouchableOpacity
-                key={u}
-                style={[styles.pickerItem, freqUnit === u && styles.pickerItemActive]}
-                onPress={() => { setFreqUnit(u); setShowFreqUnit(false); }}
+                key={f}
+                style={[styles.pickerItem, frequency === f && styles.pickerItemActive]}
+                onPress={() => { setFrequency(f); setShowFrequency(false); }}
               >
-                <Text style={[styles.pickerItemText, freqUnit === u && styles.pickerItemTextActive]}>{u}</Text>
+                <Text style={[styles.pickerItemText, frequency === f && styles.pickerItemTextActive]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -318,8 +313,6 @@ const styles = StyleSheet.create({
   input: { fontSize: 16, color: Colors.textDark, paddingVertical: 12 },
   freqRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   freqLabel: { fontSize: 14, color: Colors.textDark },
-  freqInputWrap: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, width: 60, alignItems: 'center' },
-  freqInput: { fontSize: 16, color: Colors.textDark, textAlign: 'center', width: '100%' },
   dropdown: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1.5, borderColor: Colors.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, minWidth: 110 },
   dropdownText: { fontSize: 15, color: Colors.textDark, flex: 1 },
   inputRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 },

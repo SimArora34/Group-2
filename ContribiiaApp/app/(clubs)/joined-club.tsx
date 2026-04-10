@@ -325,8 +325,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.borderLight,
   },
   settingRowLast: { borderBottomWidth: 0 },
-  settingLabel: { fontSize: 14, color: Colors.textMid, flex: 1 },
-  settingValue: { fontSize: 14, fontWeight: '600', color: Colors.textDark, flexShrink: 1, textAlign: 'right' },
+  settingLabel: { fontSize: 14, color: Colors.textMid, flexShrink: 0 },
+  settingValue: { fontSize: 14, fontWeight: '600', color: Colors.textDark, flex: 1, textAlign: 'right' },
   demoHeading: {
     fontSize: 12,
     fontWeight: '700',

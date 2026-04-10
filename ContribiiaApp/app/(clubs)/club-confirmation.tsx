@@ -119,8 +119,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  label: { fontSize: 14, color: Colors.textMid, flex: 1 },
-  value: { fontSize: 14, fontWeight: "600", color: Colors.textDark, flexShrink: 1, textAlign: 'right' },
+  label: { fontSize: 14, color: Colors.textMid, flexShrink: 0 },
+  value: { fontSize: 14, fontWeight: "600", color: Colors.textDark, flex: 1, textAlign: 'right' },
   button: {
     backgroundColor: Colors.primary,
     padding: 16,
