@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,23 +9,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppIcon from '../../components/AppIcon';
 import { Colors } from '../../constants/Colors';
-import mockData from '../../data/mockData.json';
-
-type PublicClub = {
-  id: string;
-  name: string;
-  contribution_amount: number;
-  contribution_frequency: string;
-  duration_months: number;
-};
 
 export default function ContributionSuccessScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-
-  const club: PublicClub | undefined = useMemo(
-    () => ((mockData as any).publicClubs ?? []).find((c: PublicClub) => c.id === id),
-    [id],
-  );
+  const { id, clubName, amount, frequency } = useLocalSearchParams<{
+    id: string;
+    clubName: string;
+    amount: string;
+    frequency?: string;
+  }>();
 
   const today = new Date();
   const nextDue = new Date(today);
@@ -34,7 +25,7 @@ export default function ContributionSuccessScreen() {
   const fmt = (d: Date) =>
     d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-  if (!club) return null;
+  const displayAmount = amount ? Number(amount).toLocaleString() : '—';
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -45,7 +36,7 @@ export default function ContributionSuccessScreen() {
         >
           <AppIcon name="close" size={22} color={Colors.textDark} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{club.name}</Text>
+        <Text style={styles.headerTitle}>{clubName ?? 'Club'}</Text>
         <View style={styles.headerBtn} />
       </View>
 
@@ -66,12 +57,12 @@ export default function ContributionSuccessScreen() {
         <View style={styles.card}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Club</Text>
-            <Text style={styles.detailValue}>{club.name}</Text>
+            <Text style={styles.detailValue}>{clubName ?? '—'}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Amount Deducted</Text>
             <Text style={[styles.detailValue, styles.amountText]}>
-              ${club.contribution_amount.toLocaleString()} CAD
+              ${displayAmount} CAD
             </Text>
           </View>
           <View style={styles.detailRow}>

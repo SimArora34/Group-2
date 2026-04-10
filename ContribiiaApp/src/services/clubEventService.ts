@@ -74,3 +74,34 @@ export async function getLatestPayoutForCurrentUser(
 
   return { success: true, data: (data as ClubPayout | null) ?? null };
 }
+
+export async function makeContribution(
+  circleId: UUID,
+  amount: number
+): Promise<ServiceResponse<ClubContribution>> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { success: false, error: "User not authenticated" };
+  }
+
+  const { data, error } = await supabase
+    .from("club_contributions")
+    .insert({
+      circle_id: circleId,
+      user_id: user.id,
+      amount,
+      status: "completed",
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    return { success: false, error: error?.message || "Failed to record contribution" };
+  }
+
+  return { success: true, data: data as ClubContribution };
+}
