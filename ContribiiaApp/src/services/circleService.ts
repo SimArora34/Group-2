@@ -64,16 +64,7 @@ export async function createCircle(
 export async function getPublicCircles(): Promise<ServiceResponse<any[]>> {
   const { data, error } = await supabase
     .from("circles")
-    .select(`
-      *,
-      circle_members (
-        id,
-        user_id,
-        order_position,
-        status,
-        joined_at
-      )
-    `)
+    .select("*")
     .eq("visibility", "public")
     .order("created_at", { ascending: false });
 
@@ -121,16 +112,7 @@ export async function getUserCircles(
 
   const { data, error } = await supabase
     .from("circles")
-    .select(`
-      *,
-      circle_members (
-        id,
-        user_id,
-        order_position,
-        status,
-        joined_at
-      )
-    `)
+    .select("*")
     .in("id", circleIds)
     .order("created_at", { ascending: false });
 
@@ -258,7 +240,7 @@ export async function leaveCircle(
     // Find other members
     const { data: others } = await supabase
       .from("circle_members")
-      .select("user_id, order_position, joined_at")
+      .select("user_id, order_position")
       .eq("circle_id", circleId)
       .neq("user_id", user.id)
       .order("order_position", { ascending: true })

@@ -40,19 +40,59 @@ export default function ClubMembersScreen() {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data, error } = await supabase
+
+      // Fetch circle info
+      const { data: circleData, error: circleErr } = await supabase
         .from('circles')
-        .select('id, name, owner_id, total_positions, circle_members(id, user_id, order_position, profiles(full_name, username))')
+        .select('id, name, owner_id, total_positions')
         .eq('id', id)
         .single();
-      if (error || !data) return;
-      setCircleName(data.name);
-      setIsOwner(data.owner_id === user?.id);
-      const members = (data.circle_members ?? []).sort(
+      if (circleErr || !circleData) return;
+
+      setCircleName(circleData.name);
+      setIsOwner(circleData.owner_id === user?.id);
+
+      // Fetch members separately to avoid nested-join 400 errors
+      const { data: cmRows } = await supabase
+        .from('circle_members')
+        .select('*')
+        .eq('circle_id', id);
+
+      let memberRows = cmRows ?? [];
+
+      // Ensure the circle owner has a circle_members row — re-insert if missing
+      if (circleData.owner_id && !memberRows.some((m: any) => m.user_id === circleData.owner_id)) {
+        await supabase.from('circle_members').insert({
+          circle_id: id,
+          user_id: circleData.owner_id,
+        });
+        const { data: refreshed } = await supabase
+          .from('circle_members')
+          .select('*')
+          .eq('circle_id', id);
+        if (refreshed) memberRows = refreshed;
+      }
+
+      const userIds = memberRows.map((m: any) => m.user_id).filter(Boolean);
+
+      // Fetch profiles
+      let profileMap = new Map<string, any>();
+      if (userIds.length > 0) {
+        const { data: profileRows } = await supabase
+          .from('profiles')
+          .select('id, full_name, username')
+          .in('id', userIds);
+        profileMap = new Map(
+          (profileRows ?? []).map((p: any) => [p.id, p])
+        );
+      }
+
+      const members = memberRows.sort(
         (a: any, b: any) => (a.order_position ?? 0) - (b.order_position ?? 0)
       );
       const filled: SlotItem[] = members.map((m: any, i: number) => {
-        const fullName: string = m.profiles?.full_name ?? `Member ${i + 1}`;
+        const prof = profileMap.get(m.user_id);
+        const fullName: string = prof?.full_name ?? `Member ${i + 1}`;
         const initials = fullName.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
         const isYou = m.user_id === user?.id;
         return {
@@ -61,11 +101,11 @@ export default function ClubMembersScreen() {
           name: isYou ? `${fullName} (You)` : fullName,
           initials,
           color: isYou ? Colors.primary : AVATAR_COLORS[i % AVATAR_COLORS.length],
-          username: m.profiles?.username ?? '',
-          isCreator: m.user_id === data.owner_id,
+          username: prof?.username ?? '',
+          isCreator: m.user_id === circleData.owner_id,
         } as SlotItem;
       });
-      const total = data.total_positions ?? filled.length;
+      const total = circleData.total_positions ?? filled.length;
       const openSlots: SlotItem[] = Array.from(
         { length: Math.max(0, total - filled.length) },
         (_, i) => ({ type: 'open', id: `open-${i}` })

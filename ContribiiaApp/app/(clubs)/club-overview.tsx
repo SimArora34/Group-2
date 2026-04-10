@@ -1,5 +1,5 @@
 ﻿import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   ScrollView,
@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppIcon from '../../components/AppIcon';
 import { Colors } from '../../constants/Colors';
+import { supabase } from '../../src/lib/supabaseClient';
 import { leaveCircle } from '../../src/services/circleService';
 
 type FrequencyUnit = 'day' | 'week' | 'month';
@@ -76,7 +77,75 @@ export default function ClubOverviewScreen({
   onRequestCashAdvance: () => void;
 }) {
   const [leaving, setLeaving] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // liveMembers is always fetched directly from circle_members + profiles
+  // to avoid unreliable PostgREST nested-join resolution.
+  const [liveMembers, setLiveMembers] = useState<any[]>(
+    circle?.circle_members ?? []
+  );
   const today = useMemo(() => new Date(), []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+  }, []);
+
+  // Always load members directly — never rely on a nested join passed by the parent.
+  useEffect(() => {
+    if (!circle?.id) return;
+    let cancelled = false;
+
+    async function loadMembers() {
+      // Step 1: get all circle_members rows for this circle
+      const { data: cmRows, error: cmErr } = await supabase
+        .from('circle_members')
+        .select('*')
+        .eq('circle_id', circle.id);
+
+      if (cmErr) console.warn('[club-overview] circle_members error:', cmErr.message);
+      if (cancelled) return;
+
+      let rows = cmRows ?? [];
+
+      // Step 2: ensure the circle owner has a circle_members row — if missing, re-insert it
+      if (circle.owner_id && !rows.some((m: any) => m.user_id === circle.owner_id)) {
+        const { error: fixErr } = await supabase.from('circle_members').insert({
+          circle_id: circle.id,
+          user_id: circle.owner_id,
+        });
+        if (!fixErr && !cancelled) {
+          // Re-fetch after fix
+          const { data: refreshed } = await supabase
+            .from('circle_members')
+            .select('*')
+            .eq('circle_id', circle.id);
+          if (refreshed) rows = refreshed;
+        }
+      }
+
+      if (cancelled || rows.length === 0) return;
+
+      // Step 3: fetch profile names for each member
+      const userIds = rows.map((m: any) => m.user_id).filter(Boolean);
+      const { data: profileRows } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+
+      if (cancelled) return;
+
+      const profileMap = new Map(
+        (profileRows ?? []).map((p: any) => [p.id, p])
+      );
+      const enriched = rows.map((m: any) => ({
+        ...m,
+        profiles: profileMap.get(m.user_id) ?? null,
+      }));
+      setLiveMembers(enriched);
+    }
+
+    loadMembers();
+    return () => { cancelled = true; };
+  }, [circle?.id]);
   const cycleStart = useMemo(() => circle?.cycle_start_date ? new Date(circle.cycle_start_date) : new Date(), [circle]);
   const daysLeft = useMemo(() => Math.max(0, daysDiff(today, cycleStart)), [today, cycleStart]);
   const freq = useMemo(() => parseFreq(circle?.contribution_frequency ?? 'monthly'), [circle]);
@@ -86,27 +155,27 @@ export default function ClubOverviewScreen({
     const d = new Date(cycleStart); d.setDate(1); d.setMonth(d.getMonth() + 1); return d;
   }, [cycleStart]);
 
-  const members: { name: string; initials: string; color: string }[] = useMemo(() => {
-    const raw = circle?.circle_members ?? [];
-    return raw.map((m: any, i: number) => {
-      const name: string = m.profiles?.full_name ?? `Member ${i + 1}`;
+  const members: { name: string; initials: string; color: string; userId: string }[] = useMemo(() => {
+    return liveMembers.map((m: any, i: number) => {
+      const name: string = m.profiles?.full_name || `Member ${i + 1}`;
       const initials = name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
-      return { name, initials, color: AVATAR_COLORS[i % AVATAR_COLORS.length] };
+      return { name, initials, color: AVATAR_COLORS[i % AVATAR_COLORS.length], userId: m.user_id };
     });
-  }, [circle]);
+  }, [liveMembers]);
 
   const topParticipants = useMemo((): Participant[] => {
-    const slots = Math.min(4, circle?.total_positions ?? circle?.max_members ?? 4);
-    const youIdx = Math.min(2, slots - 1);
-    const avail = members.slice(0, slots - 1);
-    let cursor = 0;
+    const slots = Math.max(
+      liveMembers.length,
+      Math.min(4, circle?.total_positions || circle?.max_members || 4)
+    );
     return Array.from({ length: slots }, (_, i) => {
-      if (i === youIdx) return { color:'#2FA8D8', id:'current-user', initials:'YO', isCreator:true, isYou:true, name:'You', order:i+1 };
-      const m = avail[cursor++];
-      if (m) return { color:m.color, id:`m-${i}`, initials:m.initials, name:m.name, order:i+1 };
-      return { color:Colors.border, id:`open-${i}`, initials:'+', isOpen:true, name:'Open', order:i+1 };
+      const m = members[i];
+      if (!m) return { color: Colors.border, id: `open-${i}`, initials: '+', isOpen: true, name: 'Open', order: i + 1 };
+      const isYou = currentUserId !== null && m.userId === currentUserId;
+      const isCreator = m.userId === circle?.owner_id;
+      return { color: m.color, id: m.userId, initials: m.initials, isCreator, isYou, name: m.name, order: i + 1 };
     });
-  }, [circle, members]);
+  }, [circle, members, currentUserId]);
 
   const tDates = useMemo(() => timelineDates(cycleStart, 6), [cycleStart]);
   const tParticipants = useMemo((): Participant[] => {
@@ -116,11 +185,12 @@ export default function ClubOverviewScreen({
   }, [topParticipants]);
 
   const handleLeave = () => {
+    const isOwner = currentUserId !== null && currentUserId === circle?.owner_id;
     Alert.alert(
       'Leave Group',
-      circle?.owner_id === undefined
-        ? 'Are you sure you want to leave this group?'
-        : 'As the creator, leaving will transfer ownership to the next member, or delete the group if you are the only member.',
+      isOwner
+        ? 'As the creator, leaving will transfer ownership to the next member, or delete the group if you are the only member.'
+        : 'Are you sure you want to leave this group?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -192,7 +262,7 @@ export default function ClubOverviewScreen({
             {topParticipants.map(p => (
               <TouchableOpacity key={p.id} style={styles.participantCard}
                 activeOpacity={p.isOpen ? 1 : 0.8} disabled={p.isOpen} onPress={() => openProfile(p)}>
-                <Text style={styles.creatorLabel}>{p.isCreator ? 'Creator' : ''}</Text>
+                <Text style={styles.creatorLabel}>{p.isCreator ? 'Creator' : p.isYou ? 'You' : ''}</Text>
                 <View style={[styles.participantAvatar,
                   { backgroundColor: p.isOpen ? Colors.surface : p.color },
                   p.isYou && styles.participantAvatarYou,
@@ -263,17 +333,18 @@ export default function ClubOverviewScreen({
             })}
           </View>
         </View>
-      </ScrollView>
 
-      <View style={styles.actionsWrap}>
+        {/* Leave button at bottom of scrollable content */}
         <TouchableOpacity style={[styles.leaveBtn, leaving && { opacity: 0.6 }]} activeOpacity={0.85}
           onPress={handleLeave} disabled={leaving}>
           <Text style={styles.leaveBtnText}>{leaving ? 'Leaving...' : 'Leave the group'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.fab} activeOpacity={0.9} onPress={onRequestCashAdvance}>
-          <AppIcon name="add" size={30} color={Colors.white} />
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
+
+      {/* Floating cash advance FAB */}
+      <TouchableOpacity style={styles.fab} activeOpacity={0.9} onPress={onRequestCashAdvance}>
+        <AppIcon name="add" size={30} color={Colors.white} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -285,7 +356,7 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection:'row' },
   notificationDot: { position:'absolute', top:6, right:6, width:8, height:8, borderRadius:4, backgroundColor:'#F74D52' },
   headerTitle: { fontSize:20, fontWeight:'700', color:Colors.textDark, flex:1, textAlign:'center' },
-  scroll: { paddingHorizontal:16, paddingBottom:120, paddingTop:16 },
+  scroll: { paddingHorizontal:16, paddingBottom:80, paddingTop:16 },
   clubName: { fontSize:36, fontWeight:'700', color:Colors.textDark, textAlign:'center', marginTop:8 },
   typeBadge: { alignSelf:'center', marginTop:6, backgroundColor:'#E9F8FA', borderWidth:1, borderColor:'#65C3CF', borderRadius:999, paddingHorizontal:14, paddingVertical:3 },
   typeText: { color:'#4A9DA8', fontSize:13, fontWeight:'500' },
@@ -328,7 +399,7 @@ const styles = StyleSheet.create({
   timelineNodeText: { color:Colors.white, fontSize:11, fontWeight:'700' },
   timelineDateText: { marginTop:3, fontSize:11, color:Colors.textDark, fontWeight:'500' },
   actionsWrap: { position:'absolute', left:14, right:14, bottom:20 },
-  leaveBtn: { backgroundColor:'#C43D2A', borderRadius:12, alignItems:'center', justifyContent:'center', paddingVertical:14 },
+  leaveBtn: { marginTop:24, backgroundColor:'#C43D2A', borderRadius:12, alignItems:'center', justifyContent:'center', paddingVertical:14 },
   leaveBtnText: { color:Colors.white, fontSize:18, fontWeight:'700' },
-  fab: { position:'absolute', right:6, bottom:-6, width:64, height:64, borderRadius:32, backgroundColor:'#2AA4B8', alignItems:'center', justifyContent:'center', shadowColor:Colors.shadow, shadowOpacity:0.2, shadowRadius:5, shadowOffset:{width:0,height:2}, elevation:4 },
+  fab: { position:'absolute', right:20, bottom:20, width:64, height:64, borderRadius:32, backgroundColor:'#2AA4B8', alignItems:'center', justifyContent:'center', shadowColor:Colors.shadow, shadowOpacity:0.2, shadowRadius:5, shadowOffset:{width:0,height:2}, elevation:4 },
 });

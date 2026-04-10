@@ -269,9 +269,12 @@ export default function ClubsScreen() {
         return;
       }
 
-      setShowAgreement(false);
-      Alert.alert("Success", "You joined the club successfully.");
+      // Navigate to the club overview — club-overview will self-fetch members
       await loadClubs();
+      setShowAgreement(false);
+      setShowExplore(false);
+      setSelectedCircle(selectedCircle);
+      setShowActiveClub(true);
     } finally {
       setAgreeJoining(false);
       setJoiningId(null);
@@ -480,9 +483,8 @@ export default function ClubsScreen() {
                     <DashboardClubCard
                       key={club.id}
                       club={club}
-                      onPress={async () => {
-                        const { data } = await supabase.from('circles').select('*, circle_members(id, user_id, order_position, joined_at, profiles(full_name))').eq('id', club.id).single();
-                        setSelectedCircle((data ?? club) as ExtendedCircle);
+                      onPress={() => {
+                        setSelectedCircle(club);
                         setShowActiveClub(true);
                       }}
                     />
@@ -505,9 +507,8 @@ export default function ClubsScreen() {
                     <DashboardClubCard
                       key={`joined-${club.id}`}
                       club={club}
-                      onPress={async () => {
-                        const { data } = await supabase.from('circles').select('*, circle_members(id, user_id, order_position, joined_at, profiles(full_name))').eq('id', club.id).single();
-                        setSelectedCircle((data ?? club) as ExtendedCircle);
+                      onPress={() => {
+                        setSelectedCircle(club);
                         setShowActiveClub(true);
                       }}
                     />

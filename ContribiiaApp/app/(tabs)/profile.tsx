@@ -4,6 +4,7 @@ import {
   getCurrentProfile,
   updateCurrentProfile,
 } from "@/src/services/profileService";
+import { supabase } from "@/src/lib/supabaseClient";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -100,6 +101,8 @@ export default function ProfileScreen() {
   });
   const [draft, setDraft] = useState(profile);
   const [usernameNotice, setUsernameNotice] = useState(profile.username);
+  const [clubCount, setClubCount] = useState<number | null>(null);
+  const [paymentCount, setPaymentCount] = useState<number | null>(null);
 
   const loadProfile = useCallback(async () => {
     const profileRes = await getCurrentProfile();
@@ -120,6 +123,24 @@ export default function ProfileScreen() {
     setDraft(loadedProfile);
     setUsernameNotice(loadedProfile.username);
     setMode("view");
+
+    // Load real user stats
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const [clubRes, paymentRes] = await Promise.all([
+        supabase
+          .from('circle_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id),
+        supabase
+          .from('transactions')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('type', 'deposit'),
+      ]);
+      setClubCount(clubRes.count ?? 0);
+      setPaymentCount(paymentRes.count ?? 0);
+    }
   }, []);
 
   useEffect(() => {
@@ -160,10 +181,6 @@ export default function ProfileScreen() {
     !!draft.phone.trim();
 
   const score = 8.5;
-  const historyItems = [
-    "5 on-time payments",
-    "Participant in 2 clubs",
-  ];
 
   const handleStartEdit = () => {
     setDraft(profile);
@@ -386,20 +403,38 @@ export default function ProfileScreen() {
 
                 <View style={styles.detailBlock}>
                   <Text style={styles.detailHeading}>User History</Text>
-                  {historyItems.map((item) => (
-                    <View key={item} style={styles.detailRow}>
-                      <AppIcon name="check-box" size={18} color="#3DA7BA" />
-                      <Text style={styles.detailText}>{item}</Text>
+                  {clubCount === null || paymentCount === null ? (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailText}>Loading...</Text>
                     </View>
-                  ))}
+                  ) : (
+                    <>
+                      <View style={styles.detailRow}>
+                        <AppIcon name="check-box" size={18} color="#3DA7BA" />
+                        <Text style={styles.detailText}>
+                          {paymentCount > 0
+                            ? `${paymentCount} on-time payment${paymentCount !== 1 ? 's' : ''}`
+                            : 'No payments yet'}
+                        </Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <AppIcon name="check-box" size={18} color="#3DA7BA" />
+                        <Text style={styles.detailText}>
+                          {clubCount > 0
+                            ? `Participant in ${clubCount} club${clubCount !== 1 ? 's' : ''}`
+                            : 'Not yet in any clubs'}
+                        </Text>
+                      </View>
+                    </>
+                  )}
                 </View>
 
                 <View style={styles.detailBlock}>
                   <Text style={styles.detailHeading}>Feedback</Text>
                   <View style={styles.detailRow}>
                     <AppIcon name="chat" size={18} color="#3DA7BA" />
-                    <Text style={styles.detailText}>
-                      “Great at communicating”
+                    <Text style={[styles.detailText, { color: Colors.textMid, fontStyle: 'italic' }]}>
+                      No feedback from members yet.
                     </Text>
                   </View>
                 </View>
