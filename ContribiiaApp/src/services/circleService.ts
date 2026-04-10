@@ -237,17 +237,22 @@ export async function leaveCircle(
   const isOwner = circle.owner_id === user.id;
 
   if (isOwner) {
-    // Find other members
+    // Find other members (use select('*') to avoid column-name issues)
     const { data: others } = await supabase
       .from("circle_members")
-      .select("user_id, order_position")
+      .select("*")
       .eq("circle_id", circleId)
       .neq("user_id", user.id)
-      .order("order_position", { ascending: true })
       .limit(1);
 
     if (!others || others.length === 0) {
-      // No other members — delete the entire circle
+      // No other members — delete the member row first, then the circle
+      await supabase
+        .from("circle_members")
+        .delete()
+        .eq("circle_id", circleId)
+        .eq("user_id", user.id);
+
       const { error: delError } = await supabase
         .from("circles")
         .delete()
@@ -274,6 +279,21 @@ export async function leaveCircle(
     .eq("user_id", user.id);
 
   if (removeError) return { success: false, error: removeError.message };
+
+  // Verify the row was actually deleted (RLS may silently block deletes)
+  const { data: stillExists } = await supabase
+    .from("circle_members")
+    .select("id")
+    .eq("circle_id", circleId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (stillExists) {
+    return {
+      success: false,
+      error: "Unable to leave group. Please contact support.",
+    };
+  }
 
   // Decrement total_members
   const { data: updated } = await supabase

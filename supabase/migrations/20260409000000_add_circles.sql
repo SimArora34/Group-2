@@ -46,19 +46,57 @@ create index if not exists idx_circle_members_circle  on public.circle_members (
 alter table public.circles        enable row level security;
 alter table public.circle_members enable row level security;
 
--- circles: anyone authenticated can view public clubs
--- circles: members can view clubs they belong to
+-- Helper 1: check circle membership without triggering RLS (breaks circular dependency)
+create or replace function public.is_member_of_circle(p_circle_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.circle_members
+    where circle_id = p_circle_id and user_id = p_user_id
+  );
+$$;
+
+-- Helper 2: check if circle is public or owned by user (bypasses RLS on circles)
+create or replace function public.is_circle_visible(p_circle_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.circles
+    where id = p_circle_id
+      and (owner_id = p_user_id or visibility = 'public')
+  );
+$$;
+
+-- Helper 3: check if user owns the circle (bypasses RLS on circles)
+create or replace function public.is_circle_owner(p_circle_id uuid, p_user_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.circles
+    where id = p_circle_id and owner_id = p_user_id
+  );
+$$;
+
+-- circles: anyone authenticated can view public clubs, their own, or ones they belong to
 drop policy if exists "circles_select" on public.circles;
 create policy "circles_select"
   on public.circles for select
   using (
     visibility = 'public'
     or owner_id = auth.uid()
-    or exists (
-      select 1 from public.circle_members
-      where circle_members.circle_id = circles.id
-        and circle_members.user_id = auth.uid()
-    )
+    or public.is_member_of_circle(id, auth.uid())
   );
 
 -- circles: authenticated users can create circles they own
@@ -79,17 +117,13 @@ create policy "circles_delete"
   on public.circles for delete
   using (auth.uid() = owner_id);
 
--- circle_members: users can view memberships for circles they belong to or own
+-- circle_members: users can see their own rows, or rows for public/owned circles
 drop policy if exists "circle_members_select" on public.circle_members;
 create policy "circle_members_select"
   on public.circle_members for select
   using (
     user_id = auth.uid()
-    or exists (
-      select 1 from public.circles
-      where circles.id = circle_members.circle_id
-        and (circles.owner_id = auth.uid() or circles.visibility = 'public')
-    )
+    or public.is_circle_visible(circle_id, auth.uid())
   );
 
 -- circle_members: authenticated users can join circles
@@ -104,9 +138,5 @@ create policy "circle_members_delete"
   on public.circle_members for delete
   using (
     user_id = auth.uid()
-    or exists (
-      select 1 from public.circles
-      where circles.id = circle_members.circle_id
-        and circles.owner_id = auth.uid()
-    )
+    or public.is_circle_owner(circle_id, auth.uid())
   );
